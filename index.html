@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>得雞胸者得天下 🐔</title>
+  <style>
+    :root {
+      --orange: #ff6b1a;
+      --orange-dark: #e05500;
+      --bg: #1a1a1a;
+      --card: #252525;
+      --card2: #2e2e2e;
+      --text: #f0f0f0;
+      --sub: #aaa;
+      --border: #3a3a3a;
+      --green: #4caf50;
+      --red: #e53935;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, #2c1a0e, #3d2310);
+      padding: 20px 16px 16px;
+      text-align: center;
+      border-bottom: 2px solid var(--orange);
+      position: sticky; top: 0; z-index: 100;
+    }
+    header h1 { font-size: 1.6em; color: var(--orange); letter-spacing: 2px; }
+    header p { font-size: 0.82em; color: var(--sub); margin-top: 4px; }
+
+    /* ── LOGIN SECTION ── */
+    #login-section {
+      max-width: 420px; margin: 60px auto; padding: 32px 24px;
+      background: var(--card); border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    #login-section h2 { text-align: center; color: var(--orange); margin-bottom: 8px; font-size: 1.2em; }
+    #login-section p { text-align: center; color: var(--sub); font-size: 0.85em; margin-bottom: 24px; }
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 0.85em; color: var(--sub); margin-bottom: 6px; }
+    .input-group input {
+      width: 100%; padding: 12px 14px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 1em;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus { outline: none; border-color: var(--orange); }
+    #start-btn {
+      width: 100%; padding: 14px;
+      background: var(--orange); color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 1.05em; font-weight: bold; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    #start-btn:hover { background: var(--orange-dark); }
+    #start-btn:active { transform: scale(0.98); }
+    #login-error { color: var(--red); font-size: 0.85em; text-align: center; margin-top: 10px; min-height: 20px; }
+
+    /* ── PRODUCT SECTION ── */
+    #product-section { display: none; padding-bottom: 100px; }
+
+    .user-bar {
+      background: #2c1a0e; padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .user-bar span { font-size: 0.9em; color: var(--orange); }
+    .user-bar button {
+      font-size: 0.78em; color: var(--sub);
+      background: none; border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 10px; cursor: pointer;
+    }
+
+    .section-title {
+      padding: 16px 16px 8px;
+      font-size: 0.8em; color: var(--sub);
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px; padding: 0 12px 12px;
+      max-width: 900px; margin: 0 auto;
+    }
+
+    .product-card {
+      background: var(--card); border-radius: 12px;
+      overflow: hidden; border: 1px solid var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+    .product-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(255,107,26,0.15); }
+    .product-card.has-qty { border-color: var(--orange); }
+
+    .product-card img {
+      width: 100%; aspect-ratio: 1/1; object-fit: cover;
+      display: block;
+    }
+    .product-card img.error-img {
+      background: var(--card2);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .card-body { padding: 10px 10px 12px; }
+    .card-name {
+      font-size: 0.82em; line-height: 1.4;
+      color: var(--text); min-height: 2.4em;
+      display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card-price { font-size: 0.78em; color: var(--orange); margin: 4px 0 8px; }
+
+    .qty-control {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .qty-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: none; font-size: 1.1em; font-weight: bold;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .qty-btn.minus { background: var(--card2); color: var(--sub); }
+    .qty-btn.minus:hover { background: #3a3a3a; }
+    .qty-btn.plus { background: var(--orange); color: #fff; }
+    .qty-btn.plus:hover { background: var(--orange-dark); }
+    .qty-btn:active { transform: scale(0.9); }
+    .qty-display {
+      min-width: 28px; text-align: center;
+      font-size: 1em; font-weight: bold; color: var(--text);
+    }
+
+    .qty-badge {
+      position: absolute; top: 8px; right: 8px;
+      background: var(--orange); color: #fff;
+      width: 22px; height: 22px; border-radius: 50%;
+      font-size: 0.75em; font-weight: bold;
+      display: none; align-items: center; justify-content: center;
+    }
+    .product-card.has-qty .qty-badge { display: flex; }
+
+    /* ── ORDER BAR (sticky bottom) ── */
+    #order-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #2c1a0e; border-top: 2px solid var(--orange);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      z-index: 200;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+    }
+    #bar-text { font-size: 0.88em; }
+    #bar-total { font-size: 1em; color: var(--orange); font-weight: bold; }
+    #bar-count { font-size: 0.78em; color: var(--sub); }
+    #submit-btn {
+      padding: 10px 22px;
+      background: var(--orange); color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 0.95em; font-weight: bold; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    #submit-btn:hover { background: var(--orange-dark); }
+    #submit-btn:active { transform: scale(0.97); }
+    #submit-btn:disabled { background: #555; cursor: not-allowed; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 300; padding: 20px;
+    }
+    .modal-box {
+      background: var(--card); border-radius: 16px;
+      padding: 28px 24px; max-width: 400px; width: 100%;
+      border: 1px solid var(--orange);
+      box-shadow: 0 12px 40px rgba(255,107,26,0.2);
+      animation: popIn 0.25s ease;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-box h3 { color: var(--orange); margin-bottom: 12px; font-size: 1.1em; }
+    .modal-box .order-summary {
+      background: var(--bg); border-radius: 10px;
+      padding: 14px; margin: 12px 0;
+      max-height: 220px; overflow-y: auto;
+      font-size: 0.88em;
+    }
+    .modal-box .order-summary .item-row {
+      display: flex; justify-content: space-between;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .modal-box .order-summary .item-row:last-child { border-bottom: none; }
+    .modal-total {
+      display: flex; justify-content: space-between;
+      font-weight: bold; font-size: 1em;
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .modal-total .amount { color: var(--orange); }
+    .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-btns button {
+      flex: 1; padding: 12px;
+      border-radius: 10px; border: none;
+      font-size: 0.95em; font-weight: bold; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-cancel { background: var(--card2); color: var(--sub); }
+    .btn-cancel:hover { background: #3a3a3a; }
+    .btn-confirm { background: var(--orange); color: #fff; }
+    .btn-confirm:hover { background: var(--orange-dark); }
+
+    /* ── SUCCESS ── */
+    #success-screen {
+      display: none;
+      max-width: 400px; margin: 80px auto; padding: 40px 24px;
+      background: var(--card); border-radius: 16px;
+      text-align: center; border: 1px solid var(--green);
+    }
+    .success-icon { font-size: 3em; margin-bottom: 12px; }
+    #success-screen h2 { color: var(--green); margin-bottom: 8px; }
+    #success-screen p { color: var(--sub); font-size: 0.9em; margin-bottom: 20px; }
+    .success-details {
+      background: var(--bg); border-radius: 10px; padding: 14px;
+      margin: 16px 0; text-align: left; font-size: 0.88em;
+    }
+    .success-details .item-row {
+      display: flex; justify-content: space-between;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+    }
+    .success-details .item-row:last-child { border-bottom: none; }
+    .btn-reorder {
+      padding: 12px 28px;
+      background: var(--orange); color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 0.95em; font-weight: bold; cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block; width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Admin link */
+    .admin-link {
+      position: fixed; bottom: 70px; right: 14px;
+      background: rgba(255,107,26,0.15); border: 1px solid var(--orange);
+      border-radius: 8px; padding: 6px 12px;
+      font-size: 0.72em; color: var(--orange); text-decoration: none;
+      z-index: 150;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🐔 得雞胸者得天下</h1>
+  <p>野人舒食 舒肥雞胸 180g 團購 · 每包 $60</p>
+</header>
+
+<!-- ── LOGIN ── -->
+<div id="login-section">
+  <h2>👋 加入團購</h2>
+  <p>請填寫姓名與手機末三碼以識別您的訂單</p>
+  <div class="input-group">
+    <label>您的姓名</label>
+    <input type="text" id="input-name" placeholder="例：王小明" maxlength="20" />
+  </div>
+  <div class="input-group">
+    <label>手機末三碼</label>
+    <input type="text" id="input-phone" placeholder="例：456" maxlength="3" inputmode="numeric" />
+  </div>
+  <button id="start-btn" onclick="startOrder()">開始選購 →</button>
+  <div id="login-error"></div>
+</div>
+
+<!-- ── PRODUCTS ── -->
+<div id="product-section">
+  <div class="user-bar">
+    <span id="user-display"></span>
+    <button onclick="changeUser()">換人</button>
+  </div>
+  <div class="section-title">請選擇您要的口味與數量</div>
+  <div class="product-grid" id="product-grid"></div>
+</div>
+
+<!-- ── SUCCESS ── -->
+<div id="success-screen">
+  <div class="success-icon">🎉</div>
+  <h2>訂單送出成功！</h2>
+  <p id="success-name"></p>
+  <div class="success-details" id="success-details"></div>
+  <p style="font-size:0.82em;color:var(--sub);margin-top:8px;">如需修改，可重新選購後再次送出</p>
+  <button class="btn-reorder" onclick="reorder()">重新選購 / 修改訂單</button>
+</div>
+
+<!-- ── ORDER BAR ── -->
+<div id="order-bar" style="display:none">
+  <div id="bar-text">
+    <div id="bar-count">尚未選購任何品項</div>
+    <div id="bar-total"></div>
+  </div>
+  <button id="submit-btn" onclick="openConfirm()">送出訂單</button>
+</div>
+
+<!-- ── CONFIRM MODAL ── -->
+<div class="modal-overlay" id="confirm-modal" style="display:none" onclick="closeModalOutside(event)">
+  <div class="modal-box">
+    <h3>📋 確認訂單</h3>
+    <p style="font-size:0.85em;color:var(--sub)" id="modal-user-name"></p>
+    <div class="order-summary" id="modal-summary"></div>
+    <div class="modal-total">
+      <span>合計</span>
+      <span class="amount" id="modal-total-amt"></span>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeConfirm()">繼續修改</button>
+      <button class="btn-confirm" id="confirm-btn" onclick="submitOrder()">確認送出</button>
+    </div>
+  </div>
+</div>
+
+<a href="admin.html" class="admin-link">後台管理</a>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyA8V2fUBHeKhnbDBpsJmAMxh0-mH9lA-_Q",
+  authDomain: "lovebiggg-8f25e.firebaseapp.com",
+  databaseURL: "https://lovebiggg-8f25e-default-rtdb.firebaseio.com",
+  projectId: "lovebiggg-8f25e",
+  storageBucket: "lovebiggg-8f25e.firebasestorage.app",
+  messagingSenderId: "584431881556",
+  appId: "1:584431881556:web:6573927d6b27ddb558ccc1",
+  measurementId: "G-KHZ7NH7PMH"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ═══════════════════════════════════════════
+// PRODUCTS DATA
+// ═══════════════════════════════════════════
+const PRICE = 60;
+const GROUP_URL = "https://www.tupiens-foodie.com/v2/PromotionEngine/Detail/527607";
+
+const PRODUCTS = [
+  { id:'p1',  name:'青檸香菜',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/11658057/0/639100546183930000?v=1' },
+  { id:'p2',  name:'漢方滷汁 (所長聯名)', img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/11541223/0/639074570401470000?v=1' },
+  { id:'p3',  name:'純淨原生 (無調味)',   img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/11466601/0/639092421532370000?v=1' },
+  { id:'p4',  name:'韓式辣醬',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/11288775/0/639081189496070000?v=1' },
+  { id:'p5',  name:'台味沙茶',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/10850212/0/639104584129800000?v=1' },
+  { id:'p6',  name:'玉米濃湯',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/10782530/0/639104582638830000?v=1' },
+  { id:'p7',  name:'藥膳風味',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/10695269/0/639081189496070000?v=1' },
+  { id:'p8',  name:'紹興玫瑰油雞胸',     img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/10293044/0/639081189496070000?v=1' },
+  { id:'p9',  name:'剝皮辣椒',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/10142958/0/639081189496070000?v=1' },
+  { id:'p10', name:'濃白味噌',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/9991190/0/639081189496070000?v=1' },
+  { id:'p11', name:'極品花雕醉雞胸',     img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/9608839/0/639107109212930000?v=1' },
+  { id:'p12', name:'鹽水香蔥',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/8082438/0/639081189496070000?v=1' },
+  { id:'p13', name:'巴蜀麻辣',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/7358503/0/639081189496070000?v=1' },
+  { id:'p14', name:'墨西哥塔可',         img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/7340047/0/639081189496070000?v=1' },
+  { id:'p15', name:'熱那亞羅勒',         img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/7340007/0/639081189496070000?v=1' },
+  { id:'p16', name:'和風柚香',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/7339894/0/639081189496070000?v=1' },
+  { id:'p17', name:'蕃茄羅勒',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/4944381/0/639081189496070000?v=1' },
+  { id:'p18', name:'台式油蔥',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/4944379/0/639081189496070000?v=1' },
+  { id:'p19', name:'義式香草',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/4944377/0/639081189496070000?v=1' },
+  { id:'p20', name:'美式炭烤',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/4944376/0/639081189496070000?v=1' },
+  { id:'p21', name:'大蒜辣椒',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/4944373/0/639081189496070000?v=1' },
+  { id:'p22', name:'經典湖鹽',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/4937454/0/639081189496070000?v=1' },
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let cart = {};        // { p1: 2, p3: 1 }
+let currentUser = null; // { name, phone3, key }
+
+// ═══════════════════════════════════════════
+// RENDER PRODUCTS
+// ═══════════════════════════════════════════
+function renderProducts() {
+  const grid = document.getElementById('product-grid');
+  grid.innerHTML = '';
+  PRODUCTS.forEach(p => {
+    const qty = cart[p.id] || 0;
+    const card = document.createElement('div');
+    card.className = 'product-card' + (qty > 0 ? ' has-qty' : '');
+    card.id = 'card-' + p.id;
+    card.innerHTML = `
+      <div class="qty-badge" id="badge-${p.id}">${qty || ''}</div>
+      <img src="${p.img}" alt="${p.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%22160%22><rect fill=%22%23333%22 width=%22160%22 height=%22160%22/><text x=%2250%25%22 y=%2250%25%22 fill=%22%23666%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2224%22>🍗</text></svg>'"/>
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        <div class="card-price">$${PRICE} / 包</div>
+        <div class="qty-control">
+          <button class="qty-btn minus" onclick="changeQty('${p.id}', -1)">−</button>
+          <span class="qty-display" id="qty-${p.id}">${qty}</span>
+          <button class="qty-btn plus" onclick="changeQty('${p.id}', 1)">+</button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════
+// CART LOGIC
+// ═══════════════════════════════════════════
+function changeQty(id, delta) {
+  const cur = cart[id] || 0;
+  const next = Math.max(0, cur + delta);
+  if (next === 0) delete cart[id];
+  else cart[id] = next;
+
+  // update DOM
+  document.getElementById('qty-' + id).textContent = next;
+  const card = document.getElementById('card-' + id);
+  const badge = document.getElementById('badge-' + id);
+  if (next > 0) {
+    card.classList.add('has-qty');
+    badge.textContent = next;
+  } else {
+    card.classList.remove('has-qty');
+    badge.textContent = '';
+  }
+  updateBar();
+}
+
+function getTotals() {
+  let pkgs = 0, amt = 0;
+  Object.values(cart).forEach(q => { pkgs += q; amt += q * PRICE; });
+  return { pkgs, amt };
+}
+
+function updateBar() {
+  const { pkgs, amt } = getTotals();
+  const bar = document.getElementById('order-bar');
+  const btn = document.getElementById('submit-btn');
+  if (pkgs === 0) {
+    document.getElementById('bar-count').textContent = '尚未選購任何品項';
+    document.getElementById('bar-total').textContent = '';
+    btn.disabled = true;
+  } else {
+    document.getElementById('bar-count').textContent = `已選 ${pkgs} 包`;
+    document.getElementById('bar-total').textContent = `合計 $${amt}`;
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════
+// USER FLOW
+// ═══════════════════════════════════════════
+function startOrder() {
+  const name = document.getElementById('input-name').value.trim();
+  const phone = document.getElementById('input-phone').value.trim();
+  const err = document.getElementById('login-error');
+
+  if (!name) { err.textContent = '請輸入姓名'; return; }
+  if (!/^\d{3}$/.test(phone)) { err.textContent = '請輸入正確的手機末三碼（3位數字）'; return; }
+
+  err.textContent = '';
+  currentUser = {
+    name,
+    phone3: phone,
+    key: (name + '_' + phone).replace(/[.#$\[\]/]/g, '_')
+  };
+
+  // load existing order if any
+  db.ref('orders/' + currentUser.key).once('value').then(snap => {
+    const data = snap.val();
+    if (data && data.items) {
+      cart = data.items;
+    } else {
+      cart = {};
+    }
+    showProductSection();
+  }).catch(() => {
+    cart = {};
+    showProductSection();
+  });
+}
+
+function showProductSection() {
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'none';
+  document.getElementById('product-section').style.display = 'block';
+  document.getElementById('order-bar').style.display = 'flex';
+  document.getElementById('user-display').textContent =
+    `👤 ${currentUser.name}（末三碼：${currentUser.phone3}）`;
+  renderProducts();
+  updateBar();
+}
+
+function changeUser() {
+  if (!confirm('確定要換人嗎？目前未送出的選擇將清除。')) return;
+  currentUser = null;
+  cart = {};
+  document.getElementById('product-section').style.display = 'none';
+  document.getElementById('order-bar').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'none';
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('input-name').value = '';
+  document.getElementById('input-phone').value = '';
+}
+
+// ═══════════════════════════════════════════
+// ORDER CONFIRM & SUBMIT
+// ═══════════════════════════════════════════
+function openConfirm() {
+  const { pkgs, amt } = getTotals();
+  if (pkgs === 0) return;
+
+  document.getElementById('modal-user-name').textContent =
+    `${currentUser.name}（${currentUser.phone3}）`;
+
+  let html = '';
+  PRODUCTS.forEach(p => {
+    const q = cart[p.id] || 0;
+    if (q > 0) {
+      html += `<div class="item-row">
+        <span>${p.name}</span>
+        <span>${q} 包 · $${q * PRICE}</span>
+      </div>`;
+    }
+  });
+  document.getElementById('modal-summary').innerHTML = html;
+  document.getElementById('modal-total-amt').textContent = `${pkgs} 包 · $${amt}`;
+  document.getElementById('confirm-modal').style.display = 'flex';
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-modal').style.display = 'none';
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('confirm-modal')) closeConfirm();
+}
+
+async function submitOrder() {
+  const { pkgs, amt } = getTotals();
+  const btn = document.getElementById('confirm-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>送出中...';
+
+  const orderData = {
+    name: currentUser.name,
+    phone3: currentUser.phone3,
+    items: cart,
+    total: pkgs,
+    amount: amt,
+    timestamp: Date.now()
+  };
+
+  try {
+    await db.ref('orders/' + currentUser.key).set(orderData);
+    closeConfirm();
+    showSuccess(pkgs, amt);
+  } catch (e) {
+    alert('送出失敗，請確認網路連線後再試。');
+    btn.disabled = false;
+    btn.textContent = '確認送出';
+  }
+}
+
+function showSuccess(pkgs, amt) {
+  document.getElementById('product-section').style.display = 'none';
+  document.getElementById('order-bar').style.display = 'none';
+  const s = document.getElementById('success-screen');
+  s.style.display = 'block';
+  document.getElementById('success-name').textContent =
+    `${currentUser.name}（${currentUser.phone3}）的訂單已記錄 ✓`;
+
+  let html = '';
+  PRODUCTS.forEach(p => {
+    const q = cart[p.id] || 0;
+    if (q > 0) {
+      html += `<div class="item-row"><span>${p.name}</span><span>${q} 包</span></div>`;
+    }
+  });
+  html += `<div class="item-row" style="margin-top:8px;font-weight:bold;color:var(--orange)">
+    <span>合計</span><span>${pkgs} 包 · $${amt}</span></div>`;
+  document.getElementById('success-details').innerHTML = html;
+}
+
+function reorder() {
+  showProductSection();
+}
+
+// Enter key support
+document.getElementById('input-phone').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startOrder();
+});
+document.getElementById('input-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('input-phone').focus();
+});
+</script>
+</body>
+</html>
