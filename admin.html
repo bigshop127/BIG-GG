@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>後台管理 · 得雞胸者得天下</title>
+  <style>
+    :root {
+      --orange: #ff6b1a;
+      --orange-dark: #e05500;
+      --bg: #111;
+      --card: #1e1e1e;
+      --card2: #262626;
+      --text: #f0f0f0;
+      --sub: #888;
+      --border: #333;
+      --green: #4caf50;
+      --red: #e53935;
+      --blue: #2196f3;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; }
+
+    /* ── LOGIN ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .login-box {
+      background: var(--card); border-radius: 16px;
+      padding: 36px 28px; max-width: 380px; width: 100%;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    }
+    .login-box h2 { color: var(--orange); margin-bottom: 6px; }
+    .login-box p { color: var(--sub); font-size: 0.85em; margin-bottom: 24px; }
+    .login-box input {
+      width: 100%; padding: 12px 14px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 1em; margin-bottom: 14px;
+    }
+    .login-box input:focus { outline: none; border-color: var(--orange); }
+    .login-box button {
+      width: 100%; padding: 13px;
+      background: var(--orange); color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 1em; font-weight: bold; cursor: pointer;
+    }
+    .login-box button:hover { background: var(--orange-dark); }
+    #pw-error { color: var(--red); font-size: 0.85em; margin-top: 10px; min-height: 20px; }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display: none; }
+
+    .top-bar {
+      background: #1a0e06;
+      border-bottom: 2px solid var(--orange);
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .top-bar h1 { font-size: 1.1em; color: var(--orange); }
+    .top-bar .badges { display: flex; gap: 10px; flex-wrap: wrap; }
+    .badge {
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 14px;
+      font-size: 0.82em;
+    }
+    .badge span { color: var(--orange); font-weight: bold; font-size: 1.1em; }
+    .badge.highlight { border-color: var(--orange); background: rgba(255,107,26,0.08); }
+    .logout-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--sub); border-radius: 8px;
+      padding: 6px 14px; font-size: 0.82em; cursor: pointer;
+    }
+    .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* Progress bar */
+    .progress-section {
+      padding: 16px 20px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.82em; color: var(--sub); margin-bottom: 8px;
+    }
+    .progress-label span:last-child { color: var(--orange); font-weight: bold; }
+    .progress-bar-bg {
+      background: var(--bg); border-radius: 99px;
+      height: 12px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--orange), #ffaa44);
+      transition: width 0.5s ease;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .tab {
+      flex: 1; padding: 12px 8px; text-align: center;
+      font-size: 0.9em; cursor: pointer; color: var(--sub);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+
+    /* Section title */
+    .sec-title {
+      font-size: 0.78em; color: var(--sub); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 12px; margin-top: 4px;
+    }
+
+    /* ── PRODUCT STATS ── */
+    .product-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px; margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card2); border-radius: 10px;
+      padding: 12px 14px; border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .stat-card.has-orders { border-color: rgba(255,107,26,0.4); }
+    .stat-card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .stat-card-name { font-size: 0.88em; color: var(--text); font-weight: 500; }
+    .stat-card-qty {
+      background: var(--orange); color: #fff;
+      border-radius: 6px; padding: 2px 8px;
+      font-size: 0.82em; font-weight: bold; min-width: 24px; text-align: center;
+    }
+    .stat-card-qty.zero { background: var(--card); color: var(--sub); }
+    .stat-card-buyers {
+      font-size: 0.76em; color: var(--sub);
+      display: flex; flex-wrap: wrap; gap: 4px;
+    }
+    .buyer-chip {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 6px;
+    }
+
+    /* ── PERSON TABLE ── */
+    .person-list { display: flex; flex-direction: column; gap: 10px; }
+    .person-card {
+      background: var(--card2); border-radius: 10px;
+      border: 1px solid var(--border); overflow: hidden;
+    }
+    .person-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .person-name { font-weight: bold; font-size: 0.95em; }
+    .person-meta { font-size: 0.76em; color: var(--sub); margin-top: 2px; }
+    .person-right { text-align: right; }
+    .person-total { color: var(--orange); font-weight: bold; font-size: 0.95em; }
+    .person-pkgs { font-size: 0.78em; color: var(--sub); }
+    .person-items { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .item-chip {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 10px;
+      font-size: 0.82em;
+    }
+    .item-chip .item-name { color: var(--text); }
+    .item-chip .item-qty { color: var(--orange); font-weight: bold; margin-left: 4px; }
+
+    /* Grand total */
+    .grand-total-card {
+      background: linear-gradient(135deg, #2c1a0e, #3d2310);
+      border: 2px solid var(--orange); border-radius: 12px;
+      padding: 20px; margin-bottom: 16px;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; text-align: center;
+    }
+    .gt-item .gt-value {
+      font-size: 1.8em; font-weight: bold; color: var(--orange);
+    }
+    .gt-item .gt-label { font-size: 0.78em; color: var(--sub); margin-top: 2px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      color: var(--sub); font-size: 0.9em;
+    }
+    .empty-state .icon { font-size: 3em; margin-bottom: 12px; }
+
+    /* Refresh btn */
+    .refresh-row {
+      display: flex; justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+    .refresh-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--sub); border-radius: 8px;
+      padding: 6px 14px; font-size: 0.8em; cursor: pointer;
+    }
+    .refresh-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Live dot */
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px;
+      background: var(--green); border-radius: 50%;
+      margin-right: 5px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Delete button */
+    .delete-btn {
+      background: none; border: none; color: var(--sub);
+      font-size: 0.8em; cursor: pointer; padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .delete-btn:hover { color: var(--red); }
+
+    .time-label { font-size: 0.72em; color: var(--sub); margin-left: 6px; }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>🔒 後台管理</h2>
+    <p>請輸入管理員密碼</p>
+    <input type="password" id="pw-input" placeholder="密碼" onkeydown="if(event.key==='Enter') checkPW()" />
+    <button onclick="checkPW()">進入後台</button>
+    <div id="pw-error"></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard">
+
+  <div class="top-bar">
+    <div>
+      <h1>🐔 得雞胸者得天下 · 後台</h1>
+    </div>
+    <div class="badges">
+      <div class="badge"><span class="live-dot"></span> 即時同步</div>
+      <div class="badge highlight">總包數：<span id="badge-total">0</span> 包</div>
+      <div class="badge highlight">總金額：$<span id="badge-amount">0</span></div>
+    </div>
+    <button class="logout-btn" onclick="logout()">登出</button>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-label">
+      <span>團購進度</span>
+      <span id="progress-text">0 / 100 包</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tab-products', this)">📦 品項統計</div>
+    <div class="tab" onclick="switchTab('tab-persons', this)">👥 個人訂單</div>
+  </div>
+
+  <!-- Tab 1: Product Stats -->
+  <div id="tab-products" class="tab-content active">
+    <div style="padding:16px 16px 0">
+      <div class="grand-total-card">
+        <div class="gt-item">
+          <div class="gt-value" id="gt-orders">0</div>
+          <div class="gt-label">訂購人數</div>
+        </div>
+        <div class="gt-item">
+          <div class="gt-value" id="gt-pkgs">0</div>
+          <div class="gt-label">總包數</div>
+        </div>
+        <div class="gt-item">
+          <div class="gt-value" id="gt-amount">$0</div>
+          <div class="gt-label">總金額</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 16px 16px">
+      <div class="sec-title">各品項統計（僅顯示有人訂購的品項）</div>
+      <div class="product-stats-grid" id="product-stats-grid">
+        <div class="empty-state"><div class="icon">📊</div>等待訂單資料...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Persons -->
+  <div id="tab-persons" class="tab-content">
+    <div style="padding:16px 16px 0">
+      <div class="sec-title">個人訂單明細</div>
+      <div class="person-list" id="person-list">
+        <div class="empty-state"><div class="icon">👥</div>尚無任何訂單</div>
+      </div>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const ADMIN_PASSWORD = 'A4980a4980@';
+const PRICE = 60;
+const TARGET = 100;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA8V2fUBHeKhnbDBpsJmAMxh0-mH9lA-_Q",
+  authDomain: "lovebiggg-8f25e.firebaseapp.com",
+  databaseURL: "https://lovebiggg-8f25e-default-rtdb.firebaseio.com",
+  projectId: "lovebiggg-8f25e",
+  storageBucket: "lovebiggg-8f25e.firebasestorage.app",
+  messagingSenderId: "584431881556",
+  appId: "1:584431881556:web:6573927d6b27ddb558ccc1",
+  measurementId: "G-KHZ7NH7PMH"
+};
+
+const PRODUCTS = [
+  { id:'p1',  name:'青檸香菜' },
+  { id:'p2',  name:'漢方滷汁 (所長聯名)' },
+  { id:'p3',  name:'純淨原生 (無調味)' },
+  { id:'p4',  name:'韓式辣醬' },
+  { id:'p5',  name:'台味沙茶' },
+  { id:'p6',  name:'玉米濃湯' },
+  { id:'p7',  name:'藥膳風味' },
+  { id:'p8',  name:'紹興玫瑰油雞胸' },
+  { id:'p9',  name:'剝皮辣椒' },
+  { id:'p10', name:'濃白味噌' },
+  { id:'p11', name:'極品花雕醉雞胸' },
+  { id:'p12', name:'鹽水香蔥' },
+  { id:'p13', name:'巴蜀麻辣' },
+  { id:'p14', name:'墨西哥塔可' },
+  { id:'p15', name:'熱那亞羅勒' },
+  { id:'p16', name:'和風柚香' },
+  { id:'p17', name:'蕃茄羅勒' },
+  { id:'p18', name:'台式油蔥' },
+  { id:'p19', name:'義式香草' },
+  { id:'p20', name:'美式炭烤' },
+  { id:'p21', name:'大蒜辣椒' },
+  { id:'p22', name:'經典湖鹽' },
+];
+const PRODUCT_MAP = {};
+PRODUCTS.forEach(p => PRODUCT_MAP[p.id] = p.name);
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let dbListener = null;
+let allOrders = {};
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+function checkPW() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    startListen();
+  } else {
+    document.getElementById('pw-error').textContent = '密碼錯誤，請再試';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function logout() {
+  if (dbListener) db.ref('orders').off('value', dbListener);
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+}
+
+// ═══════════════════════════════════════════
+// REALTIME LISTENER
+// ═══════════════════════════════════════════
+function startListen() {
+  dbListener = db.ref('orders').on('value', snap => {
+    allOrders = snap.val() || {};
+    renderAll();
+  });
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+function renderAll() {
+  const orders = Object.values(allOrders);
+  let totalPkgs = 0, totalAmt = 0;
+
+  // Aggregate per product
+  const productTotals = {}; // { p1: { qty: 5, buyers: ['王小明', ...] } }
+  PRODUCTS.forEach(p => productTotals[p.id] = { qty: 0, buyers: [] });
+
+  orders.forEach(order => {
+    if (!order.items) return;
+    totalPkgs += order.total || 0;
+    totalAmt += order.amount || 0;
+    Object.entries(order.items).forEach(([pid, qty]) => {
+      if (productTotals[pid]) {
+        productTotals[pid].qty += qty;
+        productTotals[pid].buyers.push(order.name);
+      }
+    });
+  });
+
+  // Update top badges
+  document.getElementById('badge-total').textContent = totalPkgs;
+  document.getElementById('badge-amount').textContent = totalAmt;
+  document.getElementById('gt-orders').textContent = orders.length;
+  document.getElementById('gt-pkgs').textContent = totalPkgs;
+  document.getElementById('gt-amount').textContent = '$' + totalAmt;
+
+  // Progress bar
+  const pct = Math.min(100, Math.round(totalPkgs / TARGET * 100));
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent =
+    `${totalPkgs} / ${TARGET} 包（${pct}%）`;
+
+  renderProductStats(productTotals);
+  renderPersonList(orders);
+}
+
+function renderProductStats(productTotals) {
+  const grid = document.getElementById('product-stats-grid');
+
+  // Sort: has orders first, then by qty desc
+  const sorted = PRODUCTS.slice().sort((a, b) => {
+    return (productTotals[b.id].qty || 0) - (productTotals[a.id].qty || 0);
+  });
+
+  const hasAny = sorted.some(p => productTotals[p.id].qty > 0);
+  if (!hasAny) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">📊</div>尚無任何訂單資料</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  sorted.forEach(p => {
+    const { qty, buyers } = productTotals[p.id];
+    const card = document.createElement('div');
+    card.className = 'stat-card' + (qty > 0 ? ' has-orders' : '');
+    const buyerHtml = buyers.length
+      ? buyers.map(b => `<span class="buyer-chip">${b}</span>`).join('')
+      : '<span style="color:var(--border)">—</span>';
+    card.innerHTML = `
+      <div class="stat-card-header">
+        <span class="stat-card-name">${p.name}</span>
+        <span class="stat-card-qty ${qty === 0 ? 'zero' : ''}">${qty} 包</span>
+      </div>
+      <div class="stat-card-buyers">${buyerHtml}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function renderPersonList(orders) {
+  const list = document.getElementById('person-list');
+  if (orders.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">👥</div>尚無任何訂單</div>';
+    return;
+  }
+
+  // Sort by timestamp desc
+  const sorted = orders.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  list.innerHTML = '';
+  sorted.forEach(order => {
+    const key = order.name + '_' + order.phone3;
+    const safeKey = key.replace(/[.#$\[\]/]/g, '_');
+    const card = document.createElement('div');
+    card.className = 'person-card';
+
+    const timeStr = order.timestamp
+      ? new Date(order.timestamp).toLocaleString('zh-TW', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
+      : '';
+
+    let itemsHtml = '';
+    if (order.items) {
+      PRODUCTS.forEach(p => {
+        const q = order.items[p.id] || 0;
+        if (q > 0) {
+          itemsHtml += `<span class="item-chip">
+            <span class="item-name">${p.name}</span>
+            <span class="item-qty">×${q}</span>
+          </span>`;
+        }
+      });
+    }
+
+    card.innerHTML = `
+      <div class="person-header">
+        <div>
+          <div class="person-name">${order.name}
+            <span class="time-label">${timeStr}</span>
+          </div>
+          <div class="person-meta">末三碼：${order.phone3}</div>
+        </div>
+        <div class="person-right">
+          <div class="person-total">$${order.amount || 0}</div>
+          <div class="person-pkgs">${order.total || 0} 包</div>
+          <button class="delete-btn" onclick="deleteOrder('${safeKey}','${order.name}')">🗑 刪除</button>
+        </div>
+      </div>
+      <div class="person-items">${itemsHtml || '<span style="color:var(--sub);font-size:0.85em">無品項</span>'}</div>`;
+    list.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════
+// DELETE ORDER
+// ═══════════════════════════════════════════
+async function deleteOrder(key, name) {
+  if (!confirm(`確定要刪除「${name}」的訂單嗎？`)) return;
+  try {
+    await db.ref('orders/' + key).remove();
+  } catch (e) {
+    alert('刪除失敗，請再試');
+  }
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(tabId, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+</script>
+</body>
+</html>
