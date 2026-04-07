@@ -121,6 +121,24 @@
       text-transform: uppercase; margin-bottom: 12px; margin-top: 4px;
     }
 
+    /* ── DEADLINE SECTION ── */
+    .deadline-section {
+      background: rgba(255,107,26,0.1); border: 1px solid var(--orange);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .deadline-section h3 { font-size: 0.95em; color: var(--orange); margin: 0; }
+    .deadline-section input[type="datetime-local"] {
+      padding: 6px 10px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px; flex: 1; min-width: 200px;
+    }
+    .deadline-section button {
+      padding: 8px 14px; background: var(--orange); color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: bold;
+    }
+    .deadline-section button:hover { background: var(--orange-dark); }
+    #deadline-status { font-size: 0.85em; color: var(--green); margin-left: 10px; }
+
     /* ── PRODUCT STATS ── */
     .product-stats-grid {
       display: grid;
@@ -158,19 +176,27 @@
     .person-card {
       background: var(--card2); border-radius: 10px;
       border: 1px solid var(--border); overflow: hidden;
+      transition: background-color 0.3s;
     }
+    .person-card.paid { background-color: rgba(76, 175, 80, 0.1); border-color: var(--green); } /* 已付款樣式 */
     .person-header {
       display: flex; justify-content: space-between; align-items: center;
       padding: 10px 14px;
-      background: var(--card);
+      background: rgba(0,0,0,0.2);
       border-bottom: 1px solid var(--border);
-      cursor: pointer;
     }
     .person-name { font-weight: bold; font-size: 0.95em; }
     .person-meta { font-size: 0.76em; color: var(--sub); margin-top: 2px; }
-    .person-right { text-align: right; }
+    .person-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
     .person-total { color: var(--orange); font-weight: bold; font-size: 0.95em; }
     .person-pkgs { font-size: 0.78em; color: var(--sub); }
+    
+    .paid-checkbox-label {
+      display: flex; align-items: center; gap: 6px; font-size: 0.85em; cursor: pointer; color: var(--text);
+      background: var(--card); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border);
+    }
+    .paid-checkbox-label input { cursor: pointer; width: 14px; height: 14px; accent-color: var(--green); }
+
     .person-items { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 6px; }
     .item-chip {
       background: var(--bg); border: 1px solid var(--border);
@@ -200,18 +226,6 @@
     }
     .empty-state .icon { font-size: 3em; margin-bottom: 12px; }
 
-    /* Refresh btn */
-    .refresh-row {
-      display: flex; justify-content: flex-end;
-      margin-bottom: 10px;
-    }
-    .refresh-btn {
-      background: none; border: 1px solid var(--border);
-      color: var(--sub); border-radius: 8px;
-      padding: 6px 14px; font-size: 0.8em; cursor: pointer;
-    }
-    .refresh-btn:hover { border-color: var(--orange); color: var(--orange); }
-
     /* Live dot */
     .live-dot {
       display: inline-block; width: 8px; height: 8px;
@@ -228,7 +242,7 @@
     .delete-btn {
       background: none; border: none; color: var(--sub);
       font-size: 0.8em; cursor: pointer; padding: 2px 6px;
-      border-radius: 4px;
+      border-radius: 4px; margin-top: 4px;
     }
     .delete-btn:hover { color: var(--red); }
 
@@ -237,7 +251,6 @@
 </head>
 <body>
 
-<!-- ── LOGIN ── -->
 <div id="login-screen">
   <div class="login-box">
     <h2>🔒 後台管理</h2>
@@ -248,7 +261,6 @@
   </div>
 </div>
 
-<!-- ── DASHBOARD ── -->
 <div id="dashboard">
 
   <div class="top-bar">
@@ -278,25 +290,31 @@
     <div class="tab" onclick="switchTab('tab-persons', this)">👥 個人訂單</div>
   </div>
 
-  <!-- Tab 1: Product Stats -->
   <div id="tab-products" class="tab-content active">
-    <div style="padding:16px 16px 0">
-      <div class="grand-total-card">
-        <div class="gt-item">
-          <div class="gt-value" id="gt-orders">0</div>
-          <div class="gt-label">訂購人數</div>
-        </div>
-        <div class="gt-item">
-          <div class="gt-value" id="gt-pkgs">0</div>
-          <div class="gt-label">總包數</div>
-        </div>
-        <div class="gt-item">
-          <div class="gt-value" id="gt-amount">$0</div>
-          <div class="gt-label">總金額</div>
-        </div>
+    
+    <div class="deadline-section">
+      <h3>⏱️ 團購截止時間</h3>
+      <input type="datetime-local" id="deadline-input">
+      <button onclick="updateDeadline()">更新時間</button>
+      <span id="deadline-status"></span>
+    </div>
+
+    <div class="grand-total-card">
+      <div class="gt-item">
+        <div class="gt-value" id="gt-orders">0</div>
+        <div class="gt-label">訂購人數</div>
+      </div>
+      <div class="gt-item">
+        <div class="gt-value" id="gt-pkgs">0</div>
+        <div class="gt-label">總包數</div>
+      </div>
+      <div class="gt-item">
+        <div class="gt-value" id="gt-amount">$0</div>
+        <div class="gt-label">總金額</div>
       </div>
     </div>
-    <div style="padding:0 16px 16px">
+    
+    <div>
       <div class="sec-title">各品項統計（僅顯示有人訂購的品項）</div>
       <div class="product-stats-grid" id="product-stats-grid">
         <div class="empty-state"><div class="icon">📊</div>等待訂單資料...</div>
@@ -304,20 +322,16 @@
     </div>
   </div>
 
-  <!-- Tab 2: Persons -->
   <div id="tab-persons" class="tab-content">
-    <div style="padding:16px 16px 0">
-      <div class="sec-title">個人訂單明細</div>
-      <div class="person-list" id="person-list">
-        <div class="empty-state"><div class="icon">👥</div>尚無任何訂單</div>
-      </div>
+    <div class="sec-title">個人訂單明細</div>
+    <div class="person-list" id="person-list">
+      <div class="empty-state"><div class="icon">👥</div>尚無任何訂單</div>
     </div>
     <div style="height:20px"></div>
   </div>
 
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
 
@@ -341,31 +355,8 @@ const firebaseConfig = {
 };
 
 const PRODUCTS = [
-  { id:'p1',  name:'青檸香菜' },
-  { id:'p2',  name:'漢方滷汁 (所長聯名)' },
-  { id:'p3',  name:'純淨原生 (無調味)' },
-  { id:'p4',  name:'韓式辣醬' },
-  { id:'p5',  name:'台味沙茶' },
-  { id:'p6',  name:'玉米濃湯' },
-  { id:'p7',  name:'藥膳風味' },
-  { id:'p8',  name:'紹興玫瑰油雞胸' },
-  { id:'p9',  name:'剝皮辣椒' },
-  { id:'p10', name:'濃白味噌' },
-  { id:'p11', name:'極品花雕醉雞胸' },
-  { id:'p12', name:'鹽水香蔥' },
-  { id:'p13', name:'巴蜀麻辣' },
-  { id:'p14', name:'墨西哥塔可' },
-  { id:'p15', name:'熱那亞羅勒' },
-  { id:'p16', name:'和風柚香' },
-  { id:'p17', name:'蕃茄羅勒' },
-  { id:'p18', name:'台式油蔥' },
-  { id:'p19', name:'義式香草' },
-  { id:'p20', name:'美式炭烤' },
-  { id:'p21', name:'大蒜辣椒' },
-  { id:'p22', name:'經典湖鹽' },
+  { id:'p1',  name:'青檸香菜' }, { id:'p2',  name:'漢方滷汁 (所長聯名)' }, { id:'p3',  name:'純淨原生 (無調味)' }, { id:'p4',  name:'韓式辣醬' }, { id:'p5',  name:'台味沙茶' }, { id:'p6',  name:'玉米濃湯' }, { id:'p7',  name:'藥膳風味' }, { id:'p8',  name:'紹興玫瑰油雞胸' }, { id:'p9',  name:'剝皮辣椒' }, { id:'p10', name:'濃白味噌' }, { id:'p11', name:'極品花雕醉雞胸' }, { id:'p12', name:'鹽水香蔥' }, { id:'p13', name:'巴蜀麻辣' }, { id:'p14', name:'墨西哥塔可' }, { id:'p15', name:'熱那亞羅勒' }, { id:'p16', name:'和風柚香' }, { id:'p17', name:'蕃茄羅勒' }, { id:'p18', name:'台式油蔥' }, { id:'p19', name:'義式香草' }, { id:'p20', name:'美式炭烤' }, { id:'p21', name:'大蒜辣椒' }, { id:'p22', name:'經典湖鹽' }
 ];
-const PRODUCT_MAP = {};
-PRODUCTS.forEach(p => PRODUCT_MAP[p.id] = p.name);
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -381,6 +372,7 @@ function checkPW() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
     startListen();
+    listenDeadline(); // 登入後監聽截止時間
   } else {
     document.getElementById('pw-error').textContent = '密碼錯誤，請再試';
     document.getElementById('pw-input').value = '';
@@ -390,19 +382,43 @@ function checkPW() {
 
 function logout() {
   if (dbListener) db.ref('orders').off('value', dbListener);
+  db.ref('settings/deadline').off('value'); // 取消監聽
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('pw-input').value = '';
 }
 
 // ═══════════════════════════════════════════
-// REALTIME LISTENER
+// REALTIME LISTENER (Orders & Settings)
 // ═══════════════════════════════════════════
 function startListen() {
   dbListener = db.ref('orders').on('value', snap => {
     allOrders = snap.val() || {};
     renderAll();
   });
+}
+
+function listenDeadline() {
+  db.ref('settings/deadline').on('value', snap => {
+    const dVal = snap.val();
+    if(dVal) {
+      document.getElementById('deadline-input').value = dVal;
+      document.getElementById('deadline-status').textContent = "（目前設定時間）";
+    }
+  });
+}
+
+function updateDeadline() {
+  const newVal = document.getElementById('deadline-input').value;
+  if(!newVal) { alert('請先選擇時間！'); return; }
+  
+  db.ref('settings/deadline').set(newVal)
+    .then(() => {
+      const status = document.getElementById('deadline-status');
+      status.textContent = "✅ 已更新！";
+      setTimeout(() => { status.textContent = ""; }, 3000);
+    })
+    .catch(e => alert("更新失敗：" + e));
 }
 
 // ═══════════════════════════════════════════
@@ -412,8 +428,7 @@ function renderAll() {
   const orders = Object.values(allOrders);
   let totalPkgs = 0, totalAmt = 0;
 
-  // Aggregate per product
-  const productTotals = {}; // { p1: { qty: 5, buyers: ['王小明', ...] } }
+  const productTotals = {}; 
   PRODUCTS.forEach(p => productTotals[p.id] = { qty: 0, buyers: [] });
 
   orders.forEach(order => {
@@ -428,18 +443,15 @@ function renderAll() {
     });
   });
 
-  // Update top badges
   document.getElementById('badge-total').textContent = totalPkgs;
   document.getElementById('badge-amount').textContent = totalAmt;
   document.getElementById('gt-orders').textContent = orders.length;
   document.getElementById('gt-pkgs').textContent = totalPkgs;
   document.getElementById('gt-amount').textContent = '$' + totalAmt;
 
-  // Progress bar
   const pct = Math.min(100, Math.round(totalPkgs / TARGET * 100));
   document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('progress-text').textContent =
-    `${totalPkgs} / ${TARGET} 包（${pct}%）`;
+  document.getElementById('progress-text').textContent = `${totalPkgs} / ${TARGET} 包（${pct}%）`;
 
   renderProductStats(productTotals);
   renderPersonList(orders);
@@ -447,13 +459,9 @@ function renderAll() {
 
 function renderProductStats(productTotals) {
   const grid = document.getElementById('product-stats-grid');
-
-  // Sort: has orders first, then by qty desc
-  const sorted = PRODUCTS.slice().sort((a, b) => {
-    return (productTotals[b.id].qty || 0) - (productTotals[a.id].qty || 0);
-  });
-
+  const sorted = PRODUCTS.slice().sort((a, b) => (productTotals[b.id].qty || 0) - (productTotals[a.id].qty || 0));
   const hasAny = sorted.some(p => productTotals[p.id].qty > 0);
+  
   if (!hasAny) {
     grid.innerHTML = '<div class="empty-state"><div class="icon">📊</div>尚無任何訂單資料</div>';
     return;
@@ -462,15 +470,14 @@ function renderProductStats(productTotals) {
   grid.innerHTML = '';
   sorted.forEach(p => {
     const { qty, buyers } = productTotals[p.id];
+    if(qty === 0) return; // 隱藏沒人訂的
     const card = document.createElement('div');
-    card.className = 'stat-card' + (qty > 0 ? ' has-orders' : '');
-    const buyerHtml = buyers.length
-      ? buyers.map(b => `<span class="buyer-chip">${b}</span>`).join('')
-      : '<span style="color:var(--border)">—</span>';
+    card.className = 'stat-card has-orders';
+    const buyerHtml = buyers.length ? buyers.map(b => `<span class="buyer-chip">${b}</span>`).join('') : '';
     card.innerHTML = `
       <div class="stat-card-header">
         <span class="stat-card-name">${p.name}</span>
-        <span class="stat-card-qty ${qty === 0 ? 'zero' : ''}">${qty} 包</span>
+        <span class="stat-card-qty">${qty} 包</span>
       </div>
       <div class="stat-card-buyers">${buyerHtml}</div>`;
     grid.appendChild(card);
@@ -484,44 +491,39 @@ function renderPersonList(orders) {
     return;
   }
 
-  // Sort by timestamp desc
   const sorted = orders.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
   list.innerHTML = '';
   sorted.forEach(order => {
     const key = order.name + '_' + order.phone3;
     const safeKey = key.replace(/[.#$\[\]/]/g, '_');
+    const isPaid = order.isPaid || false; // 讀取付款狀態
+    
     const card = document.createElement('div');
-    card.className = 'person-card';
+    card.className = 'person-card' + (isPaid ? ' paid' : '');
 
-    const timeStr = order.timestamp
-      ? new Date(order.timestamp).toLocaleString('zh-TW', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
-      : '';
+    const timeStr = order.timestamp ? new Date(order.timestamp).toLocaleString('zh-TW', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
 
     let itemsHtml = '';
     if (order.items) {
       PRODUCTS.forEach(p => {
         const q = order.items[p.id] || 0;
-        if (q > 0) {
-          itemsHtml += `<span class="item-chip">
-            <span class="item-name">${p.name}</span>
-            <span class="item-qty">×${q}</span>
-          </span>`;
-        }
+        if (q > 0) itemsHtml += `<span class="item-chip"><span class="item-name">${p.name}</span><span class="item-qty">×${q}</span></span>`;
       });
     }
 
     card.innerHTML = `
       <div class="person-header">
         <div>
-          <div class="person-name">${order.name}
-            <span class="time-label">${timeStr}</span>
-          </div>
+          <div class="person-name">${order.name} <span class="time-label">${timeStr}</span></div>
           <div class="person-meta">末三碼：${order.phone3}</div>
         </div>
         <div class="person-right">
           <div class="person-total">$${order.amount || 0}</div>
           <div class="person-pkgs">${order.total || 0} 包</div>
+          <label class="paid-checkbox-label">
+             <input type="checkbox" ${isPaid ? 'checked' : ''} onchange="togglePaid('${safeKey}', this.checked)"> 已付款
+          </label>
           <button class="delete-btn" onclick="deleteOrder('${safeKey}','${order.name}')">🗑 刪除</button>
         </div>
       </div>
@@ -531,15 +533,16 @@ function renderPersonList(orders) {
 }
 
 // ═══════════════════════════════════════════
-// DELETE ORDER
+// ACTIONS (Delete & Paid Toggle)
 // ═══════════════════════════════════════════
 async function deleteOrder(key, name) {
   if (!confirm(`確定要刪除「${name}」的訂單嗎？`)) return;
-  try {
-    await db.ref('orders/' + key).remove();
-  } catch (e) {
-    alert('刪除失敗，請再試');
-  }
+  try { await db.ref('orders/' + key).remove(); } 
+  catch (e) { alert('刪除失敗，請再試'); }
+}
+
+function togglePaid(key, isPaidStatus) {
+  db.ref('orders/' + key).update({ isPaid: isPaidStatus }).catch(e => alert("更新付款狀態失敗"));
 }
 
 // ═══════════════════════════════════════════
