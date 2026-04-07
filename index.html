@@ -59,6 +59,7 @@
     #start-btn:hover { background: var(--orange-dark); }
     #start-btn:active { transform: scale(0.98); }
     #login-error { color: var(--red); font-size: 0.85em; text-align: center; margin-top: 10px; min-height: 20px; }
+    #deadline-msg-front { color: var(--orange); font-size: 0.9em; text-align: center; margin-top: 15px; font-weight: bold; }
 
     /* ── PRODUCT SECTION ── */
     #product-section { display: none; padding-bottom: 100px; }
@@ -165,7 +166,7 @@
     }
     #submit-btn:hover { background: var(--orange-dark); }
     #submit-btn:active { transform: scale(0.97); }
-    #submit-btn:disabled { background: #555; cursor: not-allowed; }
+    #submit-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
 
     /* ── MODAL ── */
     .modal-overlay {
@@ -271,7 +272,6 @@
   <p>野人舒食 舒肥雞胸 180g 團購 · 每包 $60</p>
 </header>
 
-<!-- ── LOGIN ── -->
 <div id="login-section">
   <h2>👋 加入團購</h2>
   <p>請填寫姓名與手機末三碼以識別您的訂單</p>
@@ -285,9 +285,9 @@
   </div>
   <button id="start-btn" onclick="startOrder()">開始選購 →</button>
   <div id="login-error"></div>
+  <div id="deadline-msg-front"></div>
 </div>
 
-<!-- ── PRODUCTS ── -->
 <div id="product-section">
   <div class="user-bar">
     <span id="user-display"></span>
@@ -297,7 +297,6 @@
   <div class="product-grid" id="product-grid"></div>
 </div>
 
-<!-- ── SUCCESS ── -->
 <div id="success-screen">
   <div class="success-icon">🎉</div>
   <h2>訂單送出成功！</h2>
@@ -307,7 +306,6 @@
   <button class="btn-reorder" onclick="reorder()">重新選購 / 修改訂單</button>
 </div>
 
-<!-- ── ORDER BAR ── -->
 <div id="order-bar" style="display:none">
   <div id="bar-text">
     <div id="bar-count">尚未選購任何品項</div>
@@ -316,7 +314,6 @@
   <button id="submit-btn" onclick="openConfirm()">送出訂單</button>
 </div>
 
-<!-- ── CONFIRM MODAL ── -->
 <div class="modal-overlay" id="confirm-modal" style="display:none" onclick="closeModalOutside(event)">
   <div class="modal-box">
     <h3>📋 確認訂單</h3>
@@ -335,7 +332,6 @@
 
 <a href="admin.html" class="admin-link">後台管理</a>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
 
@@ -360,7 +356,6 @@ const db = firebase.database();
 // PRODUCTS DATA
 // ═══════════════════════════════════════════
 const PRICE = 60;
-const GROUP_URL = "https://www.tupiens-foodie.com/v2/PromotionEngine/Detail/527607";
 
 const PRODUCTS = [
   { id:'p1',  name:'青檸香菜',           img:'https://img.91app.com/webapi/imagesV3/Cropped/SalePage/11658057/0/639100546183930000?v=1' },
@@ -390,8 +385,36 @@ const PRODUCTS = [
 // ═══════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════
-let cart = {};        // { p1: 2, p3: 1 }
-let currentUser = null; // { name, phone3, key }
+let cart = {};        
+let currentUser = null; 
+let isDeadlinePassed = false; // 紀錄是否過期
+
+// ═══════════════════════════════════════════
+// DEADLINE LISTENER
+// ═══════════════════════════════════════════
+db.ref('settings/deadline').on('value', snap => {
+  const deadlineStr = snap.val();
+  const frontMsg = document.getElementById('deadline-msg-front');
+  
+  if (deadlineStr) {
+    const deadlineDate = new Date(deadlineStr);
+    const nowDate = new Date();
+
+    if (nowDate > deadlineDate) {
+      isDeadlinePassed = true;
+      if(frontMsg) frontMsg.textContent = "⚠️ 本團購已截止收單";
+      updateBar(); // 觸發更新按鈕狀態
+    } else {
+      isDeadlinePassed = false;
+      if(frontMsg) frontMsg.textContent = "";
+      updateBar(); // 觸發更新按鈕狀態
+    }
+  } else {
+     isDeadlinePassed = false; // 如果老闆沒設定時間，預設為未截止
+     if(frontMsg) frontMsg.textContent = "";
+     updateBar();
+  }
+});
 
 // ═══════════════════════════════════════════
 // RENDER PRODUCTS
@@ -429,7 +452,6 @@ function changeQty(id, delta) {
   if (next === 0) delete cart[id];
   else cart[id] = next;
 
-  // update DOM
   document.getElementById('qty-' + id).textContent = next;
   const card = document.getElementById('card-' + id);
   const badge = document.getElementById('badge-' + id);
@@ -451,16 +473,24 @@ function getTotals() {
 
 function updateBar() {
   const { pkgs, amt } = getTotals();
-  const bar = document.getElementById('order-bar');
   const btn = document.getElementById('submit-btn');
+  
   if (pkgs === 0) {
     document.getElementById('bar-count').textContent = '尚未選購任何品項';
     document.getElementById('bar-total').textContent = '';
     btn.disabled = true;
+    btn.textContent = "送出訂單";
   } else {
     document.getElementById('bar-count').textContent = `已選 ${pkgs} 包`;
     document.getElementById('bar-total').textContent = `合計 $${amt}`;
-    btn.disabled = false;
+    
+    if (isDeadlinePassed) {
+      btn.disabled = true;
+      btn.textContent = "已截止收單";
+    } else {
+      btn.disabled = false;
+      btn.textContent = "送出訂單";
+    }
   }
 }
 
@@ -482,14 +512,10 @@ function startOrder() {
     key: (name + '_' + phone).replace(/[.#$\[\]/]/g, '_')
   };
 
-  // load existing order if any
   db.ref('orders/' + currentUser.key).once('value').then(snap => {
     const data = snap.val();
-    if (data && data.items) {
-      cart = data.items;
-    } else {
-      cart = {};
-    }
+    if (data && data.items) cart = data.items;
+    else cart = {};
     showProductSection();
   }).catch(() => {
     cart = {};
@@ -502,8 +528,7 @@ function showProductSection() {
   document.getElementById('success-screen').style.display = 'none';
   document.getElementById('product-section').style.display = 'block';
   document.getElementById('order-bar').style.display = 'flex';
-  document.getElementById('user-display').textContent =
-    `👤 ${currentUser.name}（末三碼：${currentUser.phone3}）`;
+  document.getElementById('user-display').textContent = `👤 ${currentUser.name}（末三碼：${currentUser.phone3}）`;
   renderProducts();
   updateBar();
 }
@@ -524,21 +549,17 @@ function changeUser() {
 // ORDER CONFIRM & SUBMIT
 // ═══════════════════════════════════════════
 function openConfirm() {
+  if (isDeadlinePassed) { alert("抱歉，本團購已截止收單！"); return; }
+  
   const { pkgs, amt } = getTotals();
   if (pkgs === 0) return;
 
-  document.getElementById('modal-user-name').textContent =
-    `${currentUser.name}（${currentUser.phone3}）`;
+  document.getElementById('modal-user-name').textContent = `${currentUser.name}（${currentUser.phone3}）`;
 
   let html = '';
   PRODUCTS.forEach(p => {
     const q = cart[p.id] || 0;
-    if (q > 0) {
-      html += `<div class="item-row">
-        <span>${p.name}</span>
-        <span>${q} 包 · $${q * PRICE}</span>
-      </div>`;
-    }
+    if (q > 0) html += `<div class="item-row"><span>${p.name}</span><span>${q} 包 · $${q * PRICE}</span></div>`;
   });
   document.getElementById('modal-summary').innerHTML = html;
   document.getElementById('modal-total-amt').textContent = `${pkgs} 包 · $${amt}`;
@@ -559,12 +580,20 @@ async function submitOrder() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>送出中...';
 
+  // 嘗試保留原本的付款狀態（如果有修改過訂單）
+  let isPaidStatus = false;
+  try {
+     const snap = await db.ref('orders/' + currentUser.key + '/isPaid').once('value');
+     if(snap.exists()) isPaidStatus = snap.val();
+  } catch(e) {}
+
   const orderData = {
     name: currentUser.name,
     phone3: currentUser.phone3,
     items: cart,
     total: pkgs,
     amount: amt,
+    isPaid: isPaidStatus, // 確保重送訂單不會洗掉老闆打勾的狀態
     timestamp: Date.now()
   };
 
@@ -584,32 +613,22 @@ function showSuccess(pkgs, amt) {
   document.getElementById('order-bar').style.display = 'none';
   const s = document.getElementById('success-screen');
   s.style.display = 'block';
-  document.getElementById('success-name').textContent =
-    `${currentUser.name}（${currentUser.phone3}）的訂單已記錄 ✓`;
+  document.getElementById('success-name').textContent = `${currentUser.name}（${currentUser.phone3}）的訂單已記錄 ✓`;
 
   let html = '';
   PRODUCTS.forEach(p => {
     const q = cart[p.id] || 0;
-    if (q > 0) {
-      html += `<div class="item-row"><span>${p.name}</span><span>${q} 包</span></div>`;
-    }
+    if (q > 0) html += `<div class="item-row"><span>${p.name}</span><span>${q} 包</span></div>`;
   });
-  html += `<div class="item-row" style="margin-top:8px;font-weight:bold;color:var(--orange)">
-    <span>合計</span><span>${pkgs} 包 · $${amt}</span></div>`;
+  html += `<div class="item-row" style="margin-top:8px;font-weight:bold;color:var(--orange)"><span>合計</span><span>${pkgs} 包 · $${amt}</span></div>`;
   document.getElementById('success-details').innerHTML = html;
 }
 
-function reorder() {
-  showProductSection();
-}
+function reorder() { showProductSection(); }
 
 // Enter key support
-document.getElementById('input-phone').addEventListener('keydown', e => {
-  if (e.key === 'Enter') startOrder();
-});
-document.getElementById('input-name').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('input-phone').focus();
-});
+document.getElementById('input-phone').addEventListener('keydown', e => { if (e.key === 'Enter') startOrder(); });
+document.getElementById('input-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('input-phone').focus(); });
 </script>
 </body>
 </html>
