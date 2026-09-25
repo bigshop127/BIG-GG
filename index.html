@@ -130,6 +130,15 @@
     .qty-btn.plus { background: var(--orange); color: #fff; }
     .qty-btn.plus:hover { background: var(--orange-dark); }
     .qty-btn:active { transform: scale(0.9); }
+    .qty-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+    .order-notice {
+      display: none; margin: 12px 12px 0; padding: 10px 14px; border-radius: 10px;
+      font-size: 0.85em; line-height: 1.7; max-width: 876px;
+      background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.45); color: #ffc107;
+    }
+    .order-notice.paid { background: rgba(76,175,80,0.1); border-color: rgba(76,175,80,0.5); color: var(--green); }
+    @media (min-width: 900px) { .order-notice { margin-left: auto; margin-right: auto; } }
     .qty-display {
       min-width: 28px; text-align: center;
       font-size: 1em; font-weight: bold; color: var(--text);
@@ -293,6 +302,7 @@
     <span id="user-display"></span>
     <button onclick="changeUser()">換人</button>
   </div>
+  <div class="order-notice" id="order-notice"></div>
   <div class="section-title">請選擇您要的口味與數量</div>
   <div class="product-grid" id="product-grid"></div>
 </div>
@@ -388,33 +398,34 @@ const PRODUCTS = [
 let cart = {};        
 let currentUser = null; 
 let isDeadlinePassed = false; // 紀錄是否過期
+let deadlineStr = '';         // 資料庫裡的截止時間字串
+let serverOffset = 0;         // 伺服器時間與這台裝置時鐘的差（毫秒），避免手機時鐘不準
+let existingOrder = null;     // 這個姓名＋末三碼在資料庫裡已經有的訂單
+let orderLocked = false;      // 已付款的訂單不能再修改
 
 // ═══════════════════════════════════════════
-// DEADLINE LISTENER
+// DEADLINE
 // ═══════════════════════════════════════════
-db.ref('settings/deadline').on('value', snap => {
-  const deadlineStr = snap.val();
+// 用伺服器時間判斷，客人手機時鐘不準也不能多下單；而且會隨時間重新判斷，
+// 頁面開著不動、時間到了就會自動變成「已截止」（以前只在載入當下判斷一次）
+function serverNow() { return Date.now() + serverOffset; }
+
+function deadlineReached() {
+  if (!deadlineStr) return false;              // 團主沒設定時間＝不截止
+  const d = new Date(deadlineStr);
+  return !isNaN(d) && serverNow() > d.getTime();
+}
+
+function refreshDeadline() {
+  isDeadlinePassed = deadlineReached();
   const frontMsg = document.getElementById('deadline-msg-front');
-  
-  if (deadlineStr) {
-    const deadlineDate = new Date(deadlineStr);
-    const nowDate = new Date();
+  if (frontMsg) frontMsg.textContent = isDeadlinePassed ? "⚠️ 本團購已截止收單" : "";
+  updateBar();
+}
 
-    if (nowDate > deadlineDate) {
-      isDeadlinePassed = true;
-      if(frontMsg) frontMsg.textContent = "⚠️ 本團購已截止收單";
-      updateBar(); // 觸發更新按鈕狀態
-    } else {
-      isDeadlinePassed = false;
-      if(frontMsg) frontMsg.textContent = "";
-      updateBar(); // 觸發更新按鈕狀態
-    }
-  } else {
-     isDeadlinePassed = false; // 如果老闆沒設定時間，預設為未截止
-     if(frontMsg) frontMsg.textContent = "";
-     updateBar();
-  }
-});
+db.ref('.info/serverTimeOffset').on('value', snap => { serverOffset = snap.val() || 0; refreshDeadline(); });
+db.ref('settings/deadline').on('value', snap => { deadlineStr = snap.val() || ''; refreshDeadline(); });
+setInterval(refreshDeadline, 15000);
 
 // ═══════════════════════════════════════════
 // RENDER PRODUCTS
@@ -434,9 +445,9 @@ function renderProducts() {
         <div class="card-name">${p.name}</div>
         <div class="card-price">$${PRICE} / 包</div>
         <div class="qty-control">
-          <button class="qty-btn minus" onclick="changeQty('${p.id}', -1)">−</button>
+          <button class="qty-btn minus"${orderLocked ? ' disabled' : ''} onclick="changeQty('${p.id}', -1)">−</button>
           <span class="qty-display" id="qty-${p.id}">${qty}</span>
-          <button class="qty-btn plus" onclick="changeQty('${p.id}', 1)">+</button>
+          <button class="qty-btn plus"${orderLocked ? ' disabled' : ''} onclick="changeQty('${p.id}', 1)">+</button>
         </div>
       </div>`;
     grid.appendChild(card);
@@ -447,6 +458,7 @@ function renderProducts() {
 // CART LOGIC
 // ═══════════════════════════════════════════
 function changeQty(id, delta) {
+  if (orderLocked) return;
   const cur = cart[id] || 0;
   const next = Math.max(0, cur + delta);
   if (next === 0) delete cart[id];
@@ -474,6 +486,14 @@ function getTotals() {
 function updateBar() {
   const { pkgs, amt } = getTotals();
   const btn = document.getElementById('submit-btn');
+
+  if (orderLocked) {
+    document.getElementById('bar-count').textContent = pkgs ? `已付款 ${pkgs} 包` : '';
+    document.getElementById('bar-total').textContent = pkgs ? `合計 $${amt}` : '';
+    btn.disabled = true;
+    btn.textContent = "已付款，無法修改";
+    return;
+  }
   
   if (pkgs === 0) {
     document.getElementById('bar-count').textContent = '尚未選購任何品項';
@@ -498,7 +518,8 @@ function updateBar() {
 // USER FLOW
 // ═══════════════════════════════════════════
 function startOrder() {
-  const name = document.getElementById('input-name').value.trim();
+  // 姓名前後空白去掉、中間連續空白（含全形）合成一個，避免同一個人多打一個空白就變成兩筆訂單
+  const name = document.getElementById('input-name').value.trim().replace(/\s+/g, ' ');
   const phone = document.getElementById('input-phone').value.trim();
   const err = document.getElementById('login-error');
 
@@ -514,13 +535,26 @@ function startOrder() {
 
   db.ref('orders/' + currentUser.key).once('value').then(snap => {
     const data = snap.val();
-    if (data && data.items) cart = data.items;
-    else cart = {};
+    existingOrder = data && data.items ? data : null;
+    cart = existingOrder ? { ...existingOrder.items } : {};
+    orderLocked = !!(existingOrder && existingOrder.isPaid);
     showProductSection();
   }).catch(() => {
-    cart = {};
+    existingOrder = null; cart = {}; orderLocked = false;
     showProductSection();
   });
+}
+
+// 這個姓名＋末三碼已經有訂單時，明講「這會取代原本那筆」；已付款的訂單則提示不能改
+function renderNotice() {
+  const box = document.getElementById('order-notice');
+  if (!existingOrder) { box.style.display = 'none'; return; }
+  const summary = `${existingOrder.total || 0} 包・$${existingOrder.amount || 0}`;
+  box.className = 'order-notice' + (orderLocked ? ' paid' : '');
+  box.textContent = orderLocked
+    ? `✅ 這筆訂單（${summary}）已付款，無法再修改。如需更動，請聯絡團主。`
+    : `📌 這個姓名＋末三碼已經有一筆訂單（${summary}），下方顯示的是目前的內容，修改後重新送出會取代原本那筆。如果這不是你的訂單，請按右上角「換人」改用別的姓名。`;
+  box.style.display = 'block';
 }
 
 function showProductSection() {
@@ -529,6 +563,7 @@ function showProductSection() {
   document.getElementById('product-section').style.display = 'block';
   document.getElementById('order-bar').style.display = 'flex';
   document.getElementById('user-display').textContent = `👤 ${currentUser.name}（末三碼：${currentUser.phone3}）`;
+  renderNotice();
   renderProducts();
   updateBar();
 }
@@ -537,6 +572,9 @@ function changeUser() {
   if (!confirm('確定要換人嗎？目前未送出的選擇將清除。')) return;
   currentUser = null;
   cart = {};
+  existingOrder = null;
+  orderLocked = false;
+  document.getElementById('order-notice').style.display = 'none';
   document.getElementById('product-section').style.display = 'none';
   document.getElementById('order-bar').style.display = 'none';
   document.getElementById('success-screen').style.display = 'none';
@@ -548,12 +586,21 @@ function changeUser() {
 // ═══════════════════════════════════════════
 // ORDER CONFIRM & SUBMIT
 // ═══════════════════════════════════════════
+function resetConfirmBtn() {
+  const btn = document.getElementById('confirm-btn');
+  btn.disabled = false;
+  btn.textContent = '確認送出';
+}
+
 function openConfirm() {
+  refreshDeadline();
   if (isDeadlinePassed) { alert("抱歉，本團購已截止收單！"); return; }
-  
+  if (orderLocked) return;
+
   const { pkgs, amt } = getTotals();
   if (pkgs === 0) return;
 
+  resetConfirmBtn();   // 上一次送出後按鈕會停在「送出中」，再次修改訂單時要還原
   document.getElementById('modal-user-name').textContent = `${currentUser.name}（${currentUser.phone3}）`;
 
   let html = '';
@@ -580,12 +627,32 @@ async function submitOrder() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>送出中...';
 
-  // 嘗試保留原本的付款狀態（如果有修改過訂單）
-  let isPaidStatus = false;
+  // 頁面可能開了很久：送出前再向資料庫確認一次「截止了沒」與「這筆訂單是不是已被標成已付款」
   try {
-     const snap = await db.ref('orders/' + currentUser.key + '/isPaid').once('value');
-     if(snap.exists()) isPaidStatus = snap.val();
-  } catch(e) {}
+    const [dSnap, oSnap] = await Promise.all([
+      db.ref('settings/deadline').once('value'),
+      db.ref('orders/' + currentUser.key).once('value')
+    ]);
+    deadlineStr = dSnap.val() || '';
+    refreshDeadline();
+    if (isDeadlinePassed) {
+      closeConfirm(); resetConfirmBtn();
+      alert('抱歉，本團購已截止收單，這次的訂單沒有送出。');
+      return;
+    }
+    const latest = oSnap.val();
+    if (latest && latest.isPaid) {
+      existingOrder = latest; orderLocked = true;
+      closeConfirm(); resetConfirmBtn();
+      renderNotice(); renderProducts(); updateBar();
+      alert('這筆訂單已被團主標記為已付款，無法再修改。');
+      return;
+    }
+  } catch (e) {
+    resetConfirmBtn();
+    alert('無法確認訂單狀態，請確認網路連線後再試。');
+    return;
+  }
 
   const orderData = {
     name: currentUser.name,
@@ -593,18 +660,22 @@ async function submitOrder() {
     items: cart,
     total: pkgs,
     amount: amt,
-    isPaid: isPaidStatus, // 確保重送訂單不會洗掉老闆打勾的狀態
+    isPaid: false,   // 走到這裡表示這筆還沒付款（已付款的上面已擋下）
     timestamp: Date.now()
   };
 
   try {
     await db.ref('orders/' + currentUser.key).set(orderData);
+    existingOrder = orderData;
     closeConfirm();
+    resetConfirmBtn();
     showSuccess(pkgs, amt);
   } catch (e) {
-    alert('送出失敗，請確認網路連線後再試。');
-    btn.disabled = false;
-    btn.textContent = '確認送出';
+    resetConfirmBtn();
+    const denied = e && /permission/i.test(e.code || e.message || '');
+    alert(denied
+      ? '送出被系統拒絕：這筆訂單可能剛被團主標記為已付款而無法修改，請重新整理頁面後再看看。'
+      : '送出失敗，請確認網路連線後再試。');
   }
 }
 

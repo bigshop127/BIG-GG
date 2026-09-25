@@ -209,18 +209,27 @@
     }
     .person-name { font-weight: bold; font-size: 0.95em; overflow-wrap: anywhere; }
     .person-header > div:first-child { min-width: 0; padding-right: 8px; }
-    .person-right { flex-shrink: 0; }
-    .paid-checkbox-label { white-space: nowrap; }
     .person-meta { font-size: 0.76em; color: var(--sub); margin-top: 2px; }
-    .person-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-    .person-total { color: var(--orange); font-weight: bold; font-size: 0.95em; }
+    .person-right { flex-shrink: 0; display: flex; align-items: center; gap: 16px; }
+    .person-money { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .person-total { color: var(--orange); font-weight: bold; font-size: 1.05em; }
     .person-pkgs { font-size: 0.78em; color: var(--sub); }
-    
-    .paid-checkbox-label {
-      display: flex; align-items: center; gap: 6px; font-size: 0.85em; cursor: pointer; color: var(--text);
-      background: var(--card); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border);
+
+    /* 綠色大勾：點一下＝這個人已付款；再點一下＝取消（誤按可用畫面下方的「復原」） */
+    .paid-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; }
+    .paid-btn {
+      width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+      border: 2.5px solid var(--green); background: transparent; color: var(--green);
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: background 0.15s, color 0.15s, transform 0.1s, box-shadow 0.15s;
     }
-    .paid-checkbox-label input { cursor: pointer; width: 14px; height: 14px; accent-color: var(--green); }
+    .paid-btn svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .paid-btn:hover { background: rgba(76,175,80,0.16); }
+    .paid-btn:active { transform: scale(0.9); }
+    .paid-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .paid-btn.on { background: var(--green); color: #fff; box-shadow: 0 0 0 4px rgba(76,175,80,0.22); }
+    .paid-caption { font-size: 0.72em; color: var(--sub); white-space: nowrap; }
+    .paid-btn.on + .paid-caption { color: var(--green); font-weight: bold; }
 
     .person-items { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 6px; }
     .item-chip {
@@ -430,6 +439,38 @@
     #toast.show { opacity: 1; transform: translate(-50%, 0); }
     #toast.ok { border-color: var(--green); }
     #toast.err { border-color: var(--red); }
+    /* ── 歷史結單 ── */
+    .hist-card { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+    .hist-card[open] { border-color: rgba(255,107,26,0.5); }
+    .hist-card summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .hist-card summary::-webkit-details-marker { display: none; }
+    .hist-title { font-weight: bold; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .hist-title::after { content: '▾'; margin-left: auto; color: var(--sub); transition: transform 0.2s; }
+    .hist-card[open] .hist-title::after { transform: rotate(180deg); }
+    .hist-sub { font-size: 0.75em; color: var(--sub); font-weight: normal; }
+    .hist-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .hist-chip { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; font-size: 0.8em; }
+    .hist-chip.ok { color: var(--green); border-color: rgba(76,175,80,0.5); }
+    .hist-chip.warn { color: #ffb300; border-color: rgba(255,179,0,0.5); }
+    .hist-body { padding: 4px 14px 14px; border-top: 1px solid var(--border); }
+    .hist-body .sec-title { margin-top: 12px; }
+    .hist-products { display: flex; flex-wrap: wrap; gap: 6px; }
+    .hist-order { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .hist-order:last-child { border-bottom: none; }
+    .hist-order .ho-items { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+    .ho-side { text-align: right; font-size: 0.9em; }
+    .ho-side .amt { color: var(--orange); font-weight: bold; }
+    .paid-badge { display: inline-block; font-size: 0.72em; padding: 1px 8px; border-radius: 99px; margin-left: 6px; }
+    .paid-badge.on { background: rgba(76,175,80,0.2); color: var(--green); }
+    .paid-badge.off { background: rgba(255,179,0,0.15); color: #ffb300; }
+
+    #toast.has-action { pointer-events: auto; }
+    .toast-action {
+      margin-left: 12px; padding: 4px 12px; border-radius: 6px; cursor: pointer;
+      background: transparent; color: var(--orange); border: 1px solid var(--orange);
+      font-size: 0.95em; font-weight: bold; font-family: inherit;
+    }
+    .toast-action:hover { background: rgba(255,107,26,0.15); }
   </style>
 </head>
 <body>
@@ -473,6 +514,7 @@
   <div class="tabs">
     <div class="tab active" onclick="switchTab('tab-products', this)">📦 品項統計</div>
     <div class="tab" onclick="switchTab('tab-persons', this)">👥 個人訂單</div>
+    <div class="tab" id="tabbtn-history" onclick="switchTab('tab-history', this)">🗂 歷史結單</div>
   </div>
 
   <div id="tab-products" class="tab-content active">
@@ -534,6 +576,17 @@
     <div class="list-summary" id="list-summary"></div>
 
     <div class="person-list" id="person-list"></div>
+    <div style="height:20px"></div>
+  </div>
+
+  <div id="tab-history" class="tab-content">
+    <div class="order-toolbar">
+      <div class="search-box">
+        <input type="search" id="history-search" placeholder="🔍 搜尋名稱（查某個人在哪幾輪訂過）…" autocomplete="off" />
+      </div>
+    </div>
+    <div class="list-summary" id="history-summary"></div>
+    <div id="history-list"></div>
     <div style="height:20px"></div>
   </div>
 
@@ -626,6 +679,10 @@ const db = firebase.database();
 const auth = firebase.auth();
 let dbListener = null;
 let allOrders = {};
+let archiveListener = null;
+let allArchives = {};
+const histOpen = new Set();   // 使用者展開著的那幾輪（資料更新重畫時保持展開）
+let histSearch = '';
 
 // 個人訂單頁的檢視狀態（三個分頁共用搜尋與排序）
 let personFilter = 'unpaid';                 // unpaid | paid | all
@@ -644,12 +701,21 @@ function esc(s) {
 const pad2 = n => String(n).padStart(2, '0');
 
 let toastTimer = null;
-function showToast(msg, kind) {
+// action = { label, fn }：訊息旁多一顆按鈕（例如「復原」「查看」），有按鈕的訊息停留久一點
+function showToast(msg, kind, action) {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.className = 'show ' + (kind || '');
+  if (action) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'toast-action';
+    b.textContent = action.label;
+    b.addEventListener('click', () => { el.className = ''; action.fn(); });
+    el.appendChild(b);
+  }
+  el.className = 'show ' + (kind || '') + (action ? ' has-action' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 4000);
+  toastTimer = setTimeout(() => { el.className = ''; }, action ? 8000 : 4000);
 }
 
 // ═══════════════════════════════════════════
@@ -666,13 +732,16 @@ function showDashboard() {
   document.getElementById('dashboard').style.display = 'block';
   startListen();
   listenDeadline();
+  startArchiveListen();
 }
 
 function showLogin() {
   if (dbListener) { db.ref('orders').off('value', dbListener); dbListener = null; }
+  if (archiveListener) { db.ref('archives').off('value', archiveListener); archiveListener = null; }
   db.ref('settings/deadline').off('value');
   dashboardActive = false;
   allOrders = {};
+  allArchives = {};
   deadlineSaved = ''; deadlineDraft = '';
   closePicker(); closeCloseOut();
   document.getElementById('dashboard').style.display = 'none';
@@ -734,6 +803,13 @@ function startListen() {
     allOrders = snap.val() || {};
     renderAll();
   }, listenError('讀取訂單'));
+}
+
+function startArchiveListen() {
+  archiveListener = db.ref('archives').on('value', snap => {
+    allArchives = snap.val() || {};
+    renderHistory();
+  }, listenError('讀取歷史結單'));
 }
 
 // 截止時間一律存成 "YYYY-MM-DDTHH:mm"（跟前台 new Date() 解析的格式相同）
@@ -903,12 +979,18 @@ function renderPersonList() {
           <div class="person-meta">末三碼：${esc(order.phone3)}</div>
         </div>
         <div class="person-right">
-          <div class="person-total">$${order.amount || 0}</div>
-          <div class="person-pkgs">${order.total || 0} 包</div>
-          <label class="paid-checkbox-label">
-             <input type="checkbox" data-paid-key="${esc(key)}" ${isPaid ? 'checked' : ''}> 已付款
-          </label>
-          <button class="delete-btn" data-del-key="${esc(key)}">🗑 刪除</button>
+          <div class="person-money">
+            <div class="person-total">$${order.amount || 0}</div>
+            <div class="person-pkgs">${order.total || 0} 包</div>
+            <button class="delete-btn" data-del-key="${esc(key)}">🗑 刪除</button>
+          </div>
+          <div class="paid-wrap">
+            <button class="paid-btn${isPaid ? ' on' : ''}" data-paid-key="${esc(key)}" aria-pressed="${isPaid}"
+                    aria-label="${isPaid ? '已付款，點擊取消' : '標記為已付款'}：${esc(order.name)}" title="${isPaid ? '已付款（再點一下取消）' : '點一下＝已付款'}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.8l5 5L19.5 7"/></svg>
+            </button>
+            <div class="paid-caption">${isPaid ? '已付款' : '未付款'}</div>
+          </div>
         </div>
       </div>
       <div class="person-items">${itemsHtml || '<span style="color:var(--sub);font-size:0.85em">無品項</span>'}</div>`;
@@ -946,15 +1028,106 @@ document.querySelector('.sort-group').addEventListener('click', e => {
   renderSortButtons();
   renderPersonList();
 });
-document.getElementById('person-list').addEventListener('change', e => {
-  const cb = e.target.closest('input[data-paid-key]');
-  if (cb) togglePaid(cb.dataset.paidKey, cb.checked);
-});
 document.getElementById('person-list').addEventListener('click', e => {
-  const btn = e.target.closest('button[data-del-key]');
-  if (btn) deleteOrder(btn.dataset.delKey);
+  const paidBtn = e.target.closest('button[data-paid-key]');
+  if (paidBtn) { toggleAndAnnounce(paidBtn.dataset.paidKey); return; }
+  const delBtn = e.target.closest('button[data-del-key]');
+  if (delBtn) deleteOrder(delBtn.dataset.delKey);
 });
 renderSortButtons();
+
+// ═══════════════════════════════════════════
+// 歷史結單：每按一次「結單」就是一輪，存在 archives；這裡唯讀顯示
+// ═══════════════════════════════════════════
+function fmtOrderTime(ts) {
+  return ts ? new Date(ts).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+}
+
+function renderHistory() {
+  const root = document.getElementById('history-list');
+  const q = histSearch.trim().toLowerCase();
+  const rounds = Object.entries(allArchives)
+    .map(([id, a]) => ({ id, a: a || {} }))
+    .sort((x, y) => (y.a.closedAt || 0) - (x.a.closedAt || 0));   // 最近一輪在最上面
+
+  let html = '', roundsShown = 0, ordersShown = 0, sumPkgs = 0, sumAmt = 0;
+
+  rounds.forEach(({ id, a }) => {
+    const s = a.summary || {};
+    sumPkgs += s.totalPkgs || 0;
+    sumAmt += s.totalAmount || 0;
+
+    const orders = Object.values(a.orders || {}).filter(Boolean)
+      .sort((p, r) => (r.timestamp || 0) - (p.timestamp || 0));
+    const shown = q ? orders.filter(o => String(o.name || '').toLowerCase().includes(q)) : orders;
+    if (q && shown.length === 0) return;   // 搜尋時只留有這個人的那幾輪
+    roundsShown++; ordersShown += shown.length;
+
+    const dl = parseDT(a.deadline);
+    const productChips = Object.values(a.productTotals || {})
+      .sort((x, y) => (y.qty || 0) - (x.qty || 0))
+      .map(p => `<span class="item-chip"><span class="item-name">${esc(p.name)}</span><span class="item-qty">×${p.qty || 0}</span></span>`).join('');
+
+    const orderRows = shown.map(o => {
+      const items = Object.entries(o.items || {}).map(([pid, qty]) => {
+        const p = PRODUCTS.find(x => x.id === pid);
+        return `<span class="item-chip"><span class="item-name">${esc(p ? p.name : pid)}</span><span class="item-qty">×${qty}</span></span>`;
+      }).join('');
+      return `<div class="hist-order">
+        <div>
+          <div class="person-name">${esc(o.name)} <span class="time-label">${esc(fmtOrderTime(o.timestamp))}</span></div>
+          <div class="person-meta">末三碼：${esc(o.phone3)}</div>
+        </div>
+        <div class="ho-side"><span class="amt">$${o.amount || 0}</span> · ${o.total || 0} 包
+          <span class="paid-badge ${o.isPaid ? 'on' : 'off'}">${o.isPaid ? '已付款' : '未付款'}</span></div>
+        <div class="ho-items">${items || '<span style="color:var(--sub);font-size:0.85em">無品項</span>'}</div>
+      </div>`;
+    }).join('');
+
+    const isOpen = q ? true : histOpen.has(id);
+    html += `<details class="hist-card" data-id="${esc(id)}"${isOpen ? ' open' : ''}>
+      <summary>
+        <div class="hist-title">🧾 ${esc(a.closedAtText || fmtOrderTime(a.closedAt))} 結單
+          ${dl ? `<span class="hist-sub">截止：${esc(fmtDT(dl))}</span>` : ''}</div>
+        <div class="hist-chips">
+          <span class="hist-chip">👥 ${s.orderCount || 0} 人</span>
+          <span class="hist-chip">📦 ${s.totalPkgs || 0} 包</span>
+          <span class="hist-chip">💰 $${s.totalAmount || 0}</span>
+          <span class="hist-chip ok">✓ 已付款 ${s.paidCount || 0} 筆・$${s.paidAmount || 0}</span>
+          ${(s.unpaidCount || 0) > 0 ? `<span class="hist-chip warn">未付款 ${s.unpaidCount} 筆・$${s.unpaidAmount || 0}</span>` : ''}
+        </div>
+      </summary>
+      <div class="hist-body">
+        ${q ? '' : `<div class="sec-title">品項統計</div><div class="hist-products">${productChips || '—'}</div>`}
+        <div class="sec-title">${q ? '符合的訂單' : '個人訂單'}（${shown.length} 筆）</div>
+        ${orderRows}
+      </div>
+    </details>`;
+  });
+
+  const summary = document.getElementById('history-summary');
+  if (rounds.length === 0) {
+    summary.textContent = '';
+    root.innerHTML = '<div class="empty-state"><div class="icon">🗂</div>還沒有結單紀錄<br>' +
+      '<span style="font-size:0.85em">在「品項統計」按「結單並清空」後，那一輪的訂單會保存在這裡</span></div>';
+    return;
+  }
+  summary.innerHTML = q
+    ? `「${esc(histSearch.trim())}」共 <b>${ordersShown}</b> 筆訂單，分布在 <b>${roundsShown}</b> 輪`
+    : `共 <b>${rounds.length}</b> 輪 · 累計 <b>${sumPkgs}</b> 包 · <b>$${sumAmt}</b>`;
+  root.innerHTML = html || '<div class="empty-state"><div class="icon">🔍</div>找不到符合的紀錄</div>';
+}
+
+document.getElementById('history-search').addEventListener('input', e => {
+  histSearch = e.target.value;
+  renderHistory();
+});
+// 記住使用者展開了哪幾輪（toggle 事件不冒泡，所以用 capture）
+document.getElementById('history-list').addEventListener('toggle', e => {
+  const d = e.target;
+  if (histSearch.trim() || !d.matches || !d.matches('details.hist-card')) return;
+  if (d.open) histOpen.add(d.dataset.id); else histOpen.delete(d.dataset.id);
+}, true);
 
 // ═══════════════════════════════════════════
 // ACTIONS (Delete & Paid Toggle)
@@ -966,8 +1139,22 @@ async function deleteOrder(key) {
   catch (e) { alert('刪除失敗，請再試'); }
 }
 
-function togglePaid(key, isPaidStatus) {
-  db.ref('orders/' + key).update({ isPaid: isPaidStatus }).catch(e => alert("更新付款狀態失敗"));
+function setPaid(key, isPaidStatus) {
+  return db.ref('orders/' + key).update({ isPaid: isPaidStatus });
+}
+
+// 按一下綠色大勾就切換付款狀態，並在畫面下方給「復原」，誤按可以立刻救回來
+function toggleAndAnnounce(key) {
+  const order = allOrders[key];
+  if (!order) return;
+  const next = !order.isPaid;
+  const name = order.name || key;
+  setPaid(key, next)
+    .then(() => showToast(
+      next ? `✅ 已標記「${name}」已付款` : `↩️ 已取消「${name}」的已付款`,
+      next ? 'ok' : '',
+      { label: '復原', fn: () => setPaid(key, !next).catch(() => showToast('復原失敗，請再試', 'err')) }))
+    .catch(() => showToast('更新付款狀態失敗，請再試', 'err'));
 }
 
 // ═══════════════════════════════════════════
@@ -1236,7 +1423,8 @@ async function confirmCloseOut() {
     await db.ref('orders').update(clear);
 
     closeCloseOut();
-    showToast(`✅ 已保存 ${summary.orderCount} 筆訂單（${summary.totalPkgs} 包・$${summary.totalAmount}）並清空。記得設定下一輪的截止時間`, 'ok');
+    showToast(`✅ 已保存 ${summary.orderCount} 筆訂單（${summary.totalPkgs} 包・$${summary.totalAmount}）並清空。記得設定下一輪的截止時間`, 'ok',
+      { label: '查看歷史', fn: () => switchTab('tab-history', document.getElementById('tabbtn-history')) });
   } catch (e) {
     console.error('結單失敗', e);
     const code = e && (e.code || e.message) || String(e);
