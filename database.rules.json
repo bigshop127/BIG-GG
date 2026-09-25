@@ -1,21 +1,21 @@
 {
   "rules": {
     "orders": {
-      ".read": "auth.uid == 'REPLACE_WITH_ADMIN_UID'",
+      ".read": "auth.uid == 'c3OY9U56quZKRm9hKANGenZeyyy2'",
       "$orderKey": {
         ".read": true,
-        ".write": "auth.uid == 'REPLACE_WITH_ADMIN_UID' || newData.exists()",
-        ".validate": "auth.uid == 'REPLACE_WITH_ADMIN_UID' || (newData.hasChildren(['name', 'phone3', 'total', 'amount']) && newData.child('name').isString() && newData.child('name').val().length <= 50 && newData.child('phone3').isString() && newData.child('phone3').val().matches(/^[0-9]{3}$/) && ((newData.child('isPaid').val() == true) == (data.child('isPaid').val() == true)))"
+        ".write": "auth.uid == 'c3OY9U56quZKRm9hKANGenZeyyy2' || newData.exists()",
+        ".validate": "auth.uid == 'c3OY9U56quZKRm9hKANGenZeyyy2' || (newData.hasChildren(['name', 'phone3', 'total', 'amount']) && newData.child('name').isString() && newData.child('name').val().length <= 50 && newData.child('phone3').isString() && newData.child('phone3').val().matches(/^[0-9]{3}$/) && ((newData.child('isPaid').val() == true) == (data.child('isPaid').val() == true)))"
       }
     },
     "settings": {
       ".read": true,
-      ".write": "auth.uid == 'REPLACE_WITH_ADMIN_UID'"
+      ".write": "auth.uid == 'c3OY9U56quZKRm9hKANGenZeyyy2'"
     },
     "archives": {
-      ".read": "auth.uid == 'REPLACE_WITH_ADMIN_UID'",
+      ".read": "auth.uid == 'c3OY9U56quZKRm9hKANGenZeyyy2'",
       "$archiveId": {
-        ".write": "auth.uid == 'REPLACE_WITH_ADMIN_UID' && !data.exists()"
+        ".write": "auth.uid == 'c3OY9U56quZKRm9hKANGenZeyyy2' && !data.exists()"
       }
     }
   }
