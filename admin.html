@@ -128,16 +128,37 @@
       display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
     }
     .deadline-section h3 { font-size: 0.95em; color: var(--orange); margin: 0; }
-    .deadline-section input[type="datetime-local"] {
-      padding: 6px 10px; background: var(--bg); color: var(--text);
+    .deadline-section .dt-trigger {
+      padding: 8px 12px; background: var(--bg); color: var(--text);
       border: 1px solid var(--border); border-radius: 6px; flex: 1; min-width: 200px;
+      display: flex; align-items: center; gap: 8px;
+      cursor: pointer; user-select: none; transition: border-color 0.2s;
     }
+    .deadline-section .dt-trigger:hover,
+    .deadline-section .dt-trigger:focus-visible { border-color: var(--orange); outline: none; }
+    .dt-trigger .dt-placeholder { color: var(--sub); }
+    .dt-trigger .dt-icons { margin-left: auto; opacity: 0.7; }
     .deadline-section button {
       padding: 8px 14px; background: var(--orange); color: #fff;
       border: none; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: bold;
     }
     .deadline-section button:hover { background: var(--orange-dark); }
     #deadline-status { font-size: 0.85em; color: var(--green); margin-left: 10px; }
+    #deadline-status.dirty { color: var(--orange); font-weight: bold; }
+
+    /* ── 結單 ── */
+    .closeout-section {
+      background: rgba(229,57,53,0.07); border: 1px solid rgba(229,57,53,0.45);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .closeout-section h3 { font-size: 0.95em; color: #ff7a75; margin: 0 0 2px; }
+    .closeout-section p { font-size: 0.8em; color: var(--sub); }
+    .closeout-btn {
+      padding: 9px 18px; background: var(--red); color: #fff;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 0.88em; font-weight: bold;
+    }
+    .closeout-btn:hover { background: #c62828; }
 
     /* ── PRODUCT STATS ── */
     .product-stats-grid {
@@ -185,7 +206,10 @@
       background: rgba(0,0,0,0.2);
       border-bottom: 1px solid var(--border);
     }
-    .person-name { font-weight: bold; font-size: 0.95em; }
+    .person-name { font-weight: bold; font-size: 0.95em; overflow-wrap: anywhere; }
+    .person-header > div:first-child { min-width: 0; padding-right: 8px; }
+    .person-right { flex-shrink: 0; }
+    .paid-checkbox-label { white-space: nowrap; }
     .person-meta { font-size: 0.76em; color: var(--sub); margin-top: 2px; }
     .person-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
     .person-total { color: var(--orange); font-weight: bold; font-size: 0.95em; }
@@ -247,6 +271,164 @@
     .delete-btn:hover { color: var(--red); }
 
     .time-label { font-size: 0.72em; color: var(--sub); margin-left: 6px; }
+
+    /* ── 個人訂單：分頁＋搜尋／排序 ── */
+    .sub-tabs {
+      display: flex; align-items: center; gap: 8px; overflow-x: auto;
+      padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .sub-tab {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+      padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer;
+      background: transparent; color: #a1a1aa; font-size: 0.85em; font-weight: 600;
+      font-family: inherit; transition: all 0.2s; white-space: nowrap;
+    }
+    .sub-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .sub-tab.active { background: var(--orange); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+    .sub-count {
+      background: rgba(255,255,255,0.14); border-radius: 99px;
+      padding: 0 7px; font-size: 0.85em; min-width: 20px; text-align: center;
+    }
+    .sub-tab.active .sub-count { background: rgba(0,0,0,0.25); }
+
+    .order-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .search-box { flex: 1; min-width: 180px; }
+    .search-box input {
+      width: 100%; padding: 9px 12px; background: var(--card2); color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px; font-size: 0.9em; font-family: inherit;
+    }
+    .search-box input:focus { outline: none; border-color: var(--orange); }
+    .sort-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sort-btn {
+      padding: 8px 12px; background: var(--card2); color: var(--sub);
+      border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+      font-size: 0.82em; font-family: inherit; white-space: nowrap; transition: all 0.2s;
+    }
+    .sort-btn:hover { color: var(--text); border-color: #555; }
+    .sort-btn.active { color: var(--orange); border-color: var(--orange); background: rgba(255,107,26,0.1); font-weight: bold; }
+    .list-summary { font-size: 0.8em; color: var(--sub); margin-bottom: 10px; }
+    .list-summary b { color: var(--orange); }
+
+    /* ── 彈出視窗（日期時間選擇器／結單確認共用）── */
+    .overlay {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.7); align-items: center; justify-content: center; padding: 16px;
+    }
+    .overlay.open { display: flex; }
+
+    .dt-panel {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      width: 100%; max-width: 640px; max-height: 94vh; overflow-y: auto;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+    }
+    .dt-head {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #2c1a0e, #3d2310); border-radius: 16px 16px 0 0;
+    }
+    .dt-head .dt-label { font-size: 0.75em; color: var(--sub); margin-bottom: 4px; }
+    .dt-head .dt-summary { font-size: 1.25em; font-weight: bold; color: var(--orange); }
+    .dt-body { display: flex; flex-wrap: wrap; gap: 20px; padding: 18px 20px; justify-content: center; }
+    .dt-cal { flex: 1 1 260px; max-width: 300px; }
+    .dt-clock { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .cal-nav .cal-title { font-weight: bold; font-size: 0.95em; }
+    .cal-nav button {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card2); color: var(--text); font-size: 1.1em; cursor: pointer; line-height: 1;
+    }
+    .cal-nav button:hover { border-color: var(--orange); color: var(--orange); }
+    .cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+    .cal-week div { text-align: center; font-size: 0.75em; color: var(--sub); padding: 4px 0; }
+    .cal-day {
+      aspect-ratio: 1; border: 1px solid transparent; border-radius: 8px;
+      background: transparent; color: var(--text); font-size: 0.88em; cursor: pointer; font-family: inherit;
+    }
+    .cal-day:hover { background: rgba(255,107,26,0.15); }
+    .cal-day.other { color: #555; }
+    .cal-day.today { border-color: var(--orange); }
+    .cal-day.selected { background: var(--orange); color: #fff; font-weight: bold; }
+
+    .clock-digital { display: flex; align-items: center; gap: 4px; }
+    .clock-digital .seg {
+      width: 62px; padding: 6px 0; border: none; border-radius: 10px; cursor: pointer;
+      background: var(--card2); color: var(--text); font-size: 2em; font-weight: bold; font-family: inherit;
+    }
+    .clock-digital .seg.active { background: rgba(255,107,26,0.25); color: var(--orange); }
+    .clock-digital .colon { font-size: 2em; font-weight: bold; color: var(--sub); }
+    .ampm { display: flex; flex-direction: column; gap: 4px; margin-left: 8px; }
+    .ampm button {
+      padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+      background: var(--card2); color: var(--sub); font-size: 0.8em; font-family: inherit;
+    }
+    .ampm button.active { background: var(--orange); border-color: var(--orange); color: #fff; font-weight: bold; }
+
+    #clock-face { width: 220px; height: 220px; touch-action: none; cursor: pointer; user-select: none; }
+    #clock-face .ck-bg { fill: var(--card2); }
+    #clock-face .ck-hand { stroke: var(--orange); stroke-width: 2; }
+    #clock-face .ck-center { fill: var(--orange); }
+    #clock-face .ck-tip { fill: var(--orange); }
+    #clock-face text { fill: var(--text); font-size: 13px; pointer-events: none; }
+    #clock-face text.sel { fill: #fff; font-weight: bold; }
+
+    .dt-foot {
+      display: flex; align-items: center; gap: 10px; padding: 14px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .dt-foot .spacer { flex: 1; }
+    .dt-panel { color-scheme: dark; }
+    .dt-foot { position: sticky; bottom: 0; background: var(--card); border-radius: 0 0 16px 16px; }
+    @media (max-width: 480px) {
+      .dt-head { padding: 12px 16px; }
+      .dt-body { padding: 12px 14px; gap: 10px; }
+      .cal-day { aspect-ratio: auto; height: 34px; }
+      .cal-nav { margin-bottom: 6px; }
+      .clock-digital .seg { font-size: 1.6em; width: 54px; }
+      #clock-face { width: 190px; height: 190px; }
+      .dt-foot { padding: 10px 14px; }
+    }
+    .btn-ghost, .btn-primary, .btn-danger {
+      padding: 9px 18px; border-radius: 8px; font-size: 0.88em; font-weight: bold;
+      cursor: pointer; font-family: inherit; border: 1px solid var(--border);
+    }
+    .btn-ghost { background: transparent; color: var(--sub); }
+    .btn-ghost:hover { color: var(--text); border-color: #666; }
+    .btn-primary { background: var(--orange); border-color: var(--orange); color: #fff; }
+    .btn-primary:hover { background: var(--orange-dark); }
+    .btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
+    .btn-danger:hover { background: #c62828; }
+    .btn-danger:disabled, .btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .co-panel {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      width: 100%; max-width: 420px; padding: 24px; box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+    }
+    .co-panel h3 { color: #ff7a75; margin-bottom: 14px; }
+    .co-summary {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;
+      background: var(--card2); border-radius: 10px; padding: 14px 8px; margin-bottom: 12px;
+    }
+    .co-summary .v { font-size: 1.4em; font-weight: bold; color: var(--orange); }
+    .co-summary .l { font-size: 0.75em; color: var(--sub); }
+    .co-warn {
+      background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.4); color: #ffc107;
+      border-radius: 8px; padding: 8px 12px; font-size: 0.82em; margin-bottom: 12px;
+    }
+    .co-note { font-size: 0.8em; color: var(--sub); line-height: 1.6; margin-bottom: 16px; }
+    .co-error { color: var(--red); font-size: 0.85em; margin-bottom: 12px; min-height: 0; }
+    .co-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* Toast */
+    #toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px);
+      background: var(--card2); border: 1px solid var(--border); color: var(--text);
+      padding: 12px 20px; border-radius: 10px; font-size: 0.9em; z-index: 400;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6); opacity: 0; pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s; max-width: 90vw; text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translate(-50%, 0); }
+    #toast.ok { border-color: var(--green); }
+    #toast.err { border-color: var(--red); }
   </style>
 </head>
 <body>
@@ -294,9 +476,17 @@
     
     <div class="deadline-section">
       <h3>⏱️ 團購截止時間</h3>
-      <input type="datetime-local" id="deadline-input">
+      <div class="dt-trigger" id="deadline-trigger" role="button" tabindex="0" aria-label="選擇截止日期與時間"></div>
       <button onclick="updateDeadline()">更新時間</button>
       <span id="deadline-status"></span>
+    </div>
+
+    <div class="closeout-section">
+      <div>
+        <h3>🧾 本輪結單</h3>
+        <p>先把這一輪所有訂購資訊保存起來，再清空訂單，開始下一輪訂購。</p>
+      </div>
+      <button class="closeout-btn" onclick="openCloseOut()">結單並清空</button>
     </div>
 
     <div class="grand-total-card">
@@ -323,14 +513,84 @@
   </div>
 
   <div id="tab-persons" class="tab-content">
-    <div class="sec-title">個人訂單明細</div>
-    <div class="person-list" id="person-list">
-      <div class="empty-state"><div class="icon">👥</div>尚無任何訂單</div>
+    <div class="sub-tabs" id="sub-tabs">
+      <button class="sub-tab active" data-filter="unpaid">未付款 <span class="sub-count" id="cnt-unpaid">0</span></button>
+      <button class="sub-tab" data-filter="paid">已付款 <span class="sub-count" id="cnt-paid">0</span></button>
+      <button class="sub-tab" data-filter="all">全部訂單 <span class="sub-count" id="cnt-all">0</span></button>
     </div>
+
+    <div class="order-toolbar">
+      <div class="search-box">
+        <input type="search" id="order-search" placeholder="🔍 搜尋名稱…" autocomplete="off" />
+      </div>
+      <div class="sort-group">
+        <button class="sort-btn active" id="sort-date" data-key="date"></button>
+        <button class="sort-btn" id="sort-amount" data-key="amount"></button>
+      </div>
+    </div>
+    <div class="list-summary" id="list-summary"></div>
+
+    <div class="person-list" id="person-list"></div>
     <div style="height:20px"></div>
   </div>
 
 </div>
+
+<!-- 截止時間：日曆＋時鐘選擇器 -->
+<div class="overlay" id="dt-overlay">
+  <div class="dt-panel" role="dialog" aria-modal="true" aria-label="選擇截止日期與時間">
+    <div class="dt-head">
+      <div class="dt-label">團購截止時間</div>
+      <div class="dt-summary" id="dt-summary"></div>
+    </div>
+    <div class="dt-body">
+      <div class="dt-cal">
+        <div class="cal-nav">
+          <button type="button" id="cal-prev" aria-label="上個月">‹</button>
+          <div class="cal-title" id="cal-title"></div>
+          <button type="button" id="cal-next" aria-label="下個月">›</button>
+        </div>
+        <div class="cal-week"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="dt-clock">
+        <div class="clock-digital">
+          <button type="button" class="seg" id="ck-h"></button>
+          <span class="colon">:</span>
+          <button type="button" class="seg" id="ck-m"></button>
+          <div class="ampm">
+            <button type="button" id="ck-am">上午</button>
+            <button type="button" id="ck-pm">下午</button>
+          </div>
+        </div>
+        <svg id="clock-face" viewBox="0 0 200 200" aria-label="時鐘"></svg>
+      </div>
+    </div>
+    <div class="dt-foot">
+      <button type="button" class="btn-ghost" id="dt-now">現在</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn-ghost" id="dt-cancel">取消</button>
+      <button type="button" class="btn-primary" id="dt-ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 結單確認 -->
+<div class="overlay" id="closeout-overlay">
+  <div class="co-panel" role="dialog" aria-modal="true" aria-label="確認結單">
+    <h3>🧾 確認結單？</h3>
+    <div class="co-summary" id="co-summary"></div>
+    <div class="co-warn" id="co-warn" style="display:none"></div>
+    <p class="co-note">按下確認後，會先把這一輪所有訂單完整保存起來；<b>保存成功後才會清空</b>目前的訂單。保存失敗時訂單會原封不動保留。</p>
+    <div class="co-error" id="co-error"></div>
+    <div class="co-actions">
+      <button type="button" class="btn-ghost" id="co-cancel">取消</button>
+      <button type="button" class="btn-danger" id="co-confirm">確認結單並清空</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
@@ -363,6 +623,31 @@ const db = firebase.database();
 let dbListener = null;
 let allOrders = {};
 
+// 個人訂單頁的檢視狀態（三個分頁共用搜尋與排序）
+let personFilter = 'unpaid';                 // unpaid | paid | all
+let personSearch = '';
+let sortKey = 'date';                        // date | amount
+const sortDir = { date: 'desc', amount: 'desc' };  // desc = 晚→早／大→小
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+// 訂購人的姓名是任意文字，塞進 innerHTML 前一律跳脫
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+const pad2 = n => String(n).padStart(2, '0');
+
+let toastTimer = null;
+function showToast(msg, kind) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (kind || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 4000);
+}
+
 // ═══════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════
@@ -383,6 +668,7 @@ function checkPW() {
 function logout() {
   if (dbListener) db.ref('orders').off('value', dbListener);
   db.ref('settings/deadline').off('value'); // 取消監聽
+  deadlineSaved = ''; deadlineDraft = '';
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('pw-input').value = '';
@@ -398,27 +684,45 @@ function startListen() {
   });
 }
 
+// 截止時間一律存成 "YYYY-MM-DDTHH:mm"（跟前台 new Date() 解析的格式相同）
+let deadlineSaved = '';   // 資料庫目前的值
+let deadlineDraft = '';   // 在選擇器裡選好、但還沒按「更新時間」的值
+
 function listenDeadline() {
   db.ref('settings/deadline').on('value', snap => {
-    const dVal = snap.val();
-    if(dVal) {
-      document.getElementById('deadline-input').value = dVal;
-      document.getElementById('deadline-status').textContent = "（目前設定時間）";
-    }
+    const wasDirty = deadlineDraft !== deadlineSaved;   // 有未儲存的選擇就不要被覆蓋
+    deadlineSaved = snap.val() || '';
+    if (!wasDirty) deadlineDraft = deadlineSaved;
+    renderDeadline();
   });
 }
 
+function renderDeadline() {
+  const trigger = document.getElementById('deadline-trigger');
+  const d = parseDT(deadlineDraft);
+  trigger.innerHTML = (d ? `<span>${esc(fmtDT(d))}</span>` : '<span class="dt-placeholder">點擊選擇日期與時間</span>')
+    + '<span class="dt-icons">📅 🕒</span>';
+  const status = document.getElementById('deadline-status');
+  if (deadlineDraft && deadlineDraft !== deadlineSaved) {
+    status.textContent = '● 尚未儲存，請按「更新時間」';
+    status.className = 'dirty';
+  } else {
+    status.textContent = deadlineSaved ? '（目前設定時間）' : '';
+    status.className = '';
+  }
+}
+
 function updateDeadline() {
-  const newVal = document.getElementById('deadline-input').value;
-  if(!newVal) { alert('請先選擇時間！'); return; }
-  
-  db.ref('settings/deadline').set(newVal)
+  if (!deadlineDraft) { showToast('請先點選日期與時間', 'err'); return; }
+
+  db.ref('settings/deadline').set(deadlineDraft)
     .then(() => {
       const status = document.getElementById('deadline-status');
-      status.textContent = "✅ 已更新！";
-      setTimeout(() => { status.textContent = ""; }, 3000);
+      status.textContent = '✅ 已更新！';
+      status.className = '';
+      setTimeout(renderDeadline, 3000);
     })
-    .catch(e => alert("更新失敗：" + e));
+    .catch(e => showToast('更新失敗：' + e, 'err'));
 }
 
 // ═══════════════════════════════════════════
@@ -454,7 +758,7 @@ function renderAll() {
   document.getElementById('progress-text').textContent = `${totalPkgs} / ${TARGET} 包（${pct}%）`;
 
   renderProductStats(productTotals);
-  renderPersonList(orders);
+  renderPersonList();
 }
 
 function renderProductStats(productTotals) {
@@ -473,10 +777,10 @@ function renderProductStats(productTotals) {
     if(qty === 0) return; // 隱藏沒人訂的
     const card = document.createElement('div');
     card.className = 'stat-card has-orders';
-    const buyerHtml = buyers.length ? buyers.map(b => `<span class="buyer-chip">${b}</span>`).join('') : '';
+    const buyerHtml = buyers.length ? buyers.map(b => `<span class="buyer-chip">${esc(b)}</span>`).join('') : '';
     card.innerHTML = `
       <div class="stat-card-header">
-        <span class="stat-card-name">${p.name}</span>
+        <span class="stat-card-name">${esc(p.name)}</span>
         <span class="stat-card-qty">${qty} 包</span>
       </div>
       <div class="stat-card-buyers">${buyerHtml}</div>`;
@@ -484,21 +788,49 @@ function renderProductStats(productTotals) {
   });
 }
 
-function renderPersonList(orders) {
+function renderPersonList() {
   const list = document.getElementById('person-list');
-  if (orders.length === 0) {
-    list.innerHTML = '<div class="empty-state"><div class="icon">👥</div>尚無任何訂單</div>';
+  const entries = Object.entries(allOrders).map(([key, o]) => ({ key, o: o || {} }));
+
+  // 分頁上的數字（不受搜尋影響）
+  const paidN = entries.filter(e => e.o.isPaid).length;
+  document.getElementById('cnt-unpaid').textContent = entries.length - paidN;
+  document.getElementById('cnt-paid').textContent = paidN;
+  document.getElementById('cnt-all').textContent = entries.length;
+
+  // 分頁篩選 → 名稱搜尋 → 排序
+  let rows = entries.filter(e =>
+    personFilter === 'all' ? true : personFilter === 'paid' ? !!e.o.isPaid : !e.o.isPaid);
+  const q = personSearch.trim().toLowerCase();
+  if (q) rows = rows.filter(e => String(e.o.name || '').toLowerCase().includes(q));
+
+  const mul = sortDir[sortKey] === 'asc' ? 1 : -1;
+  const val = e => sortKey === 'amount' ? (e.o.amount || 0) : (e.o.timestamp || 0);
+  rows.sort((a, b) => {
+    const d = val(a) - val(b);
+    if (d !== 0) return d * mul;
+    return (b.o.timestamp || 0) - (a.o.timestamp || 0) || String(a.o.name).localeCompare(String(b.o.name));
+  });
+
+  // 目前這一頁的小計
+  const sumPkgs = rows.reduce((s, e) => s + (e.o.total || 0), 0);
+  const sumAmt = rows.reduce((s, e) => s + (e.o.amount || 0), 0);
+  document.getElementById('list-summary').innerHTML =
+    `共 <b>${rows.length}</b> 筆 · <b>${sumPkgs}</b> 包 · 合計 <b>$${sumAmt}</b>`;
+
+  if (rows.length === 0) {
+    let msg = '尚無任何訂單', icon = '👥';
+    if (entries.length > 0 && q) { msg = '找不到符合的訂單'; icon = '🔍'; }
+    else if (entries.length > 0 && personFilter === 'unpaid') { msg = '沒有未付款的訂單，全部都收齊了'; icon = '🎉'; }
+    else if (entries.length > 0 && personFilter === 'paid') { msg = '還沒有已付款的訂單'; icon = '💤'; }
+    list.innerHTML = `<div class="empty-state"><div class="icon">${icon}</div>${msg}</div>`;
     return;
   }
 
-  const sorted = orders.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
   list.innerHTML = '';
-  sorted.forEach(order => {
-    const key = order.name + '_' + order.phone3;
-    const safeKey = key.replace(/[.#$\[\]/]/g, '_');
-    const isPaid = order.isPaid || false; // 讀取付款狀態
-    
+  rows.forEach(({ key, o: order }) => {
+    const isPaid = !!order.isPaid;
+
     const card = document.createElement('div');
     card.className = 'person-card' + (isPaid ? ' paid' : '');
 
@@ -508,23 +840,23 @@ function renderPersonList(orders) {
     if (order.items) {
       PRODUCTS.forEach(p => {
         const q = order.items[p.id] || 0;
-        if (q > 0) itemsHtml += `<span class="item-chip"><span class="item-name">${p.name}</span><span class="item-qty">×${q}</span></span>`;
+        if (q > 0) itemsHtml += `<span class="item-chip"><span class="item-name">${esc(p.name)}</span><span class="item-qty">×${q}</span></span>`;
       });
     }
 
     card.innerHTML = `
       <div class="person-header">
         <div>
-          <div class="person-name">${order.name} <span class="time-label">${timeStr}</span></div>
-          <div class="person-meta">末三碼：${order.phone3}</div>
+          <div class="person-name">${esc(order.name)} <span class="time-label">${esc(timeStr)}</span></div>
+          <div class="person-meta">末三碼：${esc(order.phone3)}</div>
         </div>
         <div class="person-right">
           <div class="person-total">$${order.amount || 0}</div>
           <div class="person-pkgs">${order.total || 0} 包</div>
           <label class="paid-checkbox-label">
-             <input type="checkbox" ${isPaid ? 'checked' : ''} onchange="togglePaid('${safeKey}', this.checked)"> 已付款
+             <input type="checkbox" data-paid-key="${esc(key)}" ${isPaid ? 'checked' : ''}> 已付款
           </label>
-          <button class="delete-btn" onclick="deleteOrder('${safeKey}','${order.name}')">🗑 刪除</button>
+          <button class="delete-btn" data-del-key="${esc(key)}">🗑 刪除</button>
         </div>
       </div>
       <div class="person-items">${itemsHtml || '<span style="color:var(--sub);font-size:0.85em">無品項</span>'}</div>`;
@@ -532,12 +864,53 @@ function renderPersonList(orders) {
   });
 }
 
+function renderSortButtons() {
+  const dateBtn = document.getElementById('sort-date');
+  const amtBtn = document.getElementById('sort-amount');
+  dateBtn.textContent = '🕒 送出日期：' + (sortDir.date === 'desc' ? '晚 → 早' : '早 → 晚');
+  amtBtn.textContent = '💰 金額：' + (sortDir.amount === 'desc' ? '大 → 小' : '小 → 大');
+  dateBtn.classList.toggle('active', sortKey === 'date');
+  amtBtn.classList.toggle('active', sortKey === 'amount');
+}
+
+// 個人訂單頁的操作（清單每次重繪，所以用事件委派）
+document.getElementById('sub-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.sub-tab');
+  if (!btn) return;
+  personFilter = btn.dataset.filter;
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.toggle('active', t === btn));
+  renderPersonList();
+});
+document.getElementById('order-search').addEventListener('input', e => {
+  personSearch = e.target.value;
+  renderPersonList();
+});
+document.querySelector('.sort-group').addEventListener('click', e => {
+  const btn = e.target.closest('.sort-btn');
+  if (!btn) return;
+  const key = btn.dataset.key;
+  if (key === sortKey) sortDir[key] = sortDir[key] === 'desc' ? 'asc' : 'desc';  // 再點一次＝反向
+  else sortKey = key;                                                          // 換成這個排序，沿用它上次的方向
+  renderSortButtons();
+  renderPersonList();
+});
+document.getElementById('person-list').addEventListener('change', e => {
+  const cb = e.target.closest('input[data-paid-key]');
+  if (cb) togglePaid(cb.dataset.paidKey, cb.checked);
+});
+document.getElementById('person-list').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-del-key]');
+  if (btn) deleteOrder(btn.dataset.delKey);
+});
+renderSortButtons();
+
 // ═══════════════════════════════════════════
 // ACTIONS (Delete & Paid Toggle)
 // ═══════════════════════════════════════════
-async function deleteOrder(key, name) {
+async function deleteOrder(key) {
+  const name = (allOrders[key] && allOrders[key].name) || key;
   if (!confirm(`確定要刪除「${name}」的訂單嗎？`)) return;
-  try { await db.ref('orders/' + key).remove(); } 
+  try { await db.ref('orders/' + key).remove(); }
   catch (e) { alert('刪除失敗，請再試'); }
 }
 
@@ -554,6 +927,279 @@ function switchTab(tabId, el) {
   el.classList.add('active');
   document.getElementById(tabId).classList.add('active');
 }
+
+// ═══════════════════════════════════════════
+// 截止時間：日曆＋時鐘選擇器
+// ═══════════════════════════════════════════
+const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+
+function parseDT(str) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(str || '');
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  const d = new Date(str);
+  return str && !isNaN(d) ? d : null;
+}
+function toDTString(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function fmtDT(d) {
+  const h = d.getHours();
+  return `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}（${WEEK[d.getDay()]}）` +
+         `${h < 12 ? '上午' : '下午'} ${pad2(h % 12 || 12)}:${pad2(d.getMinutes())}`;
+}
+function sameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+// 選擇器目前的暫存狀態（按「確定」才會寫回 deadlineDraft）
+const dtp = { viewY: 0, viewM: 0, date: null, h12: 12, min: 0, pm: false, mode: 'hour' };
+
+function dtpCurrent() {
+  const h24 = (dtp.h12 % 12) + (dtp.pm ? 12 : 0);
+  return new Date(dtp.date.getFullYear(), dtp.date.getMonth(), dtp.date.getDate(), h24, dtp.min);
+}
+function dtpLoad(base) {
+  dtp.date = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  dtp.viewY = base.getFullYear();
+  dtp.viewM = base.getMonth();
+  dtp.pm = base.getHours() >= 12;
+  dtp.h12 = base.getHours() % 12 || 12;
+  dtp.min = base.getMinutes();
+}
+
+function openPicker() {
+  let base = parseDT(deadlineDraft);
+  if (!base) { base = new Date(); base.setHours(base.getHours() + 1, 0, 0, 0); }   // 沒設定過：預設下一個整點
+  dtpLoad(base);
+  dtp.mode = 'hour';
+  document.getElementById('dt-overlay').classList.add('open');
+  renderPicker();
+}
+function closePicker() { document.getElementById('dt-overlay').classList.remove('open'); }
+
+function renderPicker() {
+  document.getElementById('dt-summary').textContent = fmtDT(dtpCurrent());
+  renderCalendar();
+  renderDigital();
+  renderClock();
+}
+
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = `${dtp.viewY} 年 ${dtp.viewM + 1} 月`;
+  const today = new Date();
+  const startOffset = new Date(dtp.viewY, dtp.viewM, 1).getDay();
+  let html = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(dtp.viewY, dtp.viewM, 1 - startOffset + i);
+    const cls = ['cal-day'];
+    if (d.getMonth() !== dtp.viewM) cls.push('other');
+    if (sameDay(d, today)) cls.push('today');
+    if (sameDay(d, dtp.date)) cls.push('selected');
+    html += `<button type="button" class="${cls.join(' ')}" data-ts="${d.getTime()}">${d.getDate()}</button>`;
+  }
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function renderDigital() {
+  const h = document.getElementById('ck-h'), m = document.getElementById('ck-m');
+  h.textContent = pad2(dtp.h12);
+  m.textContent = pad2(dtp.min);
+  h.classList.toggle('active', dtp.mode === 'hour');
+  m.classList.toggle('active', dtp.mode === 'min');
+  document.getElementById('ck-am').classList.toggle('active', !dtp.pm);
+  document.getElementById('ck-pm').classList.toggle('active', dtp.pm);
+}
+
+// 時鐘面板：小時模式畫 1–12，分鐘模式畫 0–55，指針指向目前選的值
+function renderClock() {
+  const isHour = dtp.mode === 'hour';
+  const R = 74;
+  const at = deg => [100 + R * Math.sin(deg * Math.PI / 180), 100 - R * Math.cos(deg * Math.PI / 180)];
+  const angle = isHour ? (dtp.h12 % 12) * 30 : dtp.min * 6;
+  const [tx, ty] = at(angle);
+
+  let svg = `<circle class="ck-bg" cx="100" cy="100" r="96"/>` +
+            `<line class="ck-hand" x1="100" y1="100" x2="${tx}" y2="${ty}"/>` +
+            `<circle class="ck-center" cx="100" cy="100" r="3.5"/>` +
+            `<circle class="ck-tip" cx="${tx}" cy="${ty}" r="17"/>`;
+  if (!isHour && dtp.min % 5 !== 0) svg += `<circle cx="${tx}" cy="${ty}" r="2.5" fill="#fff"/>`;   // 落在兩個刻度之間
+
+  const labels = isHour ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+  labels.forEach(v => {
+    const [x, y] = at(isHour ? v * 30 : v * 6);
+    const sel = isHour ? v === dtp.h12 : v === dtp.min;
+    svg += `<text class="${sel ? 'sel' : ''}" x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central">${isHour ? v : pad2(v)}</text>`;
+  });
+  document.getElementById('clock-face').innerHTML = svg;
+}
+
+function pickFromClock(e, isStart) {
+  const face = document.getElementById('clock-face');
+  const r = face.getBoundingClientRect();
+  const dx = (e.clientX - r.left) / r.width * 200 - 100;
+  const dy = (e.clientY - r.top) / r.height * 200 - 100;
+  if (isStart && Math.hypot(dx, dy) > 100) return false;              // 點在圓盤外面不算
+  const angle = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;      // 12 點鐘方向 = 0°，順時鐘
+  if (dtp.mode === 'hour') dtp.h12 = Math.round(angle / 30) % 12 || 12;
+  else dtp.min = Math.round(angle / 6) % 60;
+  document.getElementById('dt-summary').textContent = fmtDT(dtpCurrent());
+  renderDigital();
+  renderClock();
+  return true;
+}
+
+(function initPicker() {
+  const trigger = document.getElementById('deadline-trigger');
+  trigger.addEventListener('click', openPicker);
+  trigger.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker(); } });
+
+  const overlay = document.getElementById('dt-overlay');
+  overlay.addEventListener('mousedown', e => { if (e.target === overlay) closePicker(); });
+  document.getElementById('dt-cancel').addEventListener('click', closePicker);
+  document.getElementById('dt-ok').addEventListener('click', () => {
+    deadlineDraft = toDTString(dtpCurrent());
+    closePicker();
+    renderDeadline();
+  });
+  document.getElementById('dt-now').addEventListener('click', () => { dtpLoad(new Date()); renderPicker(); });
+
+  document.getElementById('cal-prev').addEventListener('click', () => {
+    const d = new Date(dtp.viewY, dtp.viewM - 1, 1); dtp.viewY = d.getFullYear(); dtp.viewM = d.getMonth(); renderCalendar();
+  });
+  document.getElementById('cal-next').addEventListener('click', () => {
+    const d = new Date(dtp.viewY, dtp.viewM + 1, 1); dtp.viewY = d.getFullYear(); dtp.viewM = d.getMonth(); renderCalendar();
+  });
+  document.getElementById('cal-grid').addEventListener('click', e => {
+    const btn = e.target.closest('.cal-day');
+    if (!btn) return;
+    const d = new Date(+btn.dataset.ts);
+    dtp.date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    dtp.viewY = d.getFullYear(); dtp.viewM = d.getMonth();            // 點到上／下個月的灰色日期會直接跳過去
+    renderPicker();
+  });
+
+  document.getElementById('ck-h').addEventListener('click', () => { dtp.mode = 'hour'; renderDigital(); renderClock(); });
+  document.getElementById('ck-m').addEventListener('click', () => { dtp.mode = 'min'; renderDigital(); renderClock(); });
+  document.getElementById('ck-am').addEventListener('click', () => { dtp.pm = false; renderPicker(); });
+  document.getElementById('ck-pm').addEventListener('click', () => { dtp.pm = true; renderPicker(); });
+
+  // 點或拖曳時鐘面板；選完小時自動切到分鐘
+  const face = document.getElementById('clock-face');
+  let dragging = false;
+  face.addEventListener('pointerdown', e => {
+    if (!pickFromClock(e, true)) return;
+    dragging = true;
+    face.setPointerCapture(e.pointerId);
+  });
+  face.addEventListener('pointermove', e => { if (dragging) pickFromClock(e, false); });
+  const endDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    if (dtp.mode === 'hour') { dtp.mode = 'min'; renderDigital(); renderClock(); }
+  };
+  face.addEventListener('pointerup', endDrag);
+  face.addEventListener('pointercancel', () => { dragging = false; });
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    closePicker();
+    if (!document.getElementById('co-confirm').disabled) closeCloseOut();
+  });
+})();
+
+// ═══════════════════════════════════════════
+// 結單：先保存整輪訂單到 archives，成功後才清空 orders
+// ═══════════════════════════════════════════
+function summarizeOrders(orders) {
+  const s = { orderCount: 0, totalPkgs: 0, totalAmount: 0, paidCount: 0, unpaidCount: 0, paidAmount: 0, unpaidAmount: 0 };
+  const products = {};
+  Object.values(orders).forEach(o => {
+    if (!o) return;
+    s.orderCount++;
+    s.totalPkgs += o.total || 0;
+    s.totalAmount += o.amount || 0;
+    if (o.isPaid) { s.paidCount++; s.paidAmount += o.amount || 0; }
+    else { s.unpaidCount++; s.unpaidAmount += o.amount || 0; }
+    Object.entries(o.items || {}).forEach(([pid, qty]) => {
+      const p = PRODUCTS.find(x => x.id === pid);
+      if (!products[pid]) products[pid] = { name: p ? p.name : pid, qty: 0 };
+      products[pid].qty += qty;
+    });
+  });
+  return { summary: s, productTotals: products };
+}
+
+function openCloseOut() {
+  const { summary: s } = summarizeOrders(allOrders);
+  if (s.orderCount === 0) { showToast('目前沒有任何訂單，不需要結單', 'err'); return; }
+
+  document.getElementById('co-summary').innerHTML =
+    `<div><div class="v">${s.orderCount}</div><div class="l">訂購人數</div></div>` +
+    `<div><div class="v">${s.totalPkgs}</div><div class="l">總包數</div></div>` +
+    `<div><div class="v">$${s.totalAmount}</div><div class="l">總金額</div></div>`;
+  const warn = document.getElementById('co-warn');
+  if (s.unpaidCount > 0) {
+    warn.style.display = 'block';
+    warn.textContent = `⚠️ 還有 ${s.unpaidCount} 筆未付款（$${s.unpaidAmount}），結單後會一起封存並從目前訂單清掉。`;
+  } else {
+    warn.style.display = 'none';
+  }
+  document.getElementById('co-error').textContent = '';
+  document.getElementById('co-confirm').disabled = false;
+  document.getElementById('co-cancel').disabled = false;
+  document.getElementById('co-confirm').textContent = '確認結單並清空';
+  document.getElementById('closeout-overlay').classList.add('open');
+}
+function closeCloseOut() { document.getElementById('closeout-overlay').classList.remove('open'); }
+
+async function confirmCloseOut() {
+  const btn = document.getElementById('co-confirm');
+  const cancel = document.getElementById('co-cancel');
+  const errBox = document.getElementById('co-error');
+  btn.disabled = true; cancel.disabled = true;
+  btn.textContent = '保存中…';
+  errBox.textContent = '';
+
+  try {
+    // 1. 讀「現在」的訂單（不是打開視窗時的舊畫面）
+    const orders = (await db.ref('orders').once('value')).val();
+    if (!orders) { closeCloseOut(); showToast('目前沒有任何訂單，不需要結單', 'err'); return; }
+
+    // 2. 完整保存這一輪。這一步失敗就直接跳到 catch，orders 完全不會動
+    const now = new Date();
+    const { summary, productTotals } = summarizeOrders(orders);
+    const archiveRef = db.ref('archives').push();
+    await archiveRef.set({
+      closedAt: now.getTime(),
+      closedAtText: `${now.getFullYear()}/${pad2(now.getMonth() + 1)}/${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`,
+      deadline: deadlineSaved || null,
+      summary,
+      productTotals,
+      orders
+    });
+
+    // 3. 保存成功才清空；只清掉剛剛封存的那幾筆，結單瞬間才送進來的新訂單不會被誤刪
+    const clear = {};
+    Object.keys(orders).forEach(k => { clear[k] = null; });
+    await db.ref('orders').update(clear);
+
+    closeCloseOut();
+    showToast(`✅ 已保存 ${summary.orderCount} 筆訂單（${summary.totalPkgs} 包・$${summary.totalAmount}）並清空。記得設定下一輪的截止時間`, 'ok');
+  } catch (e) {
+    console.error('結單失敗', e);
+    const code = e && (e.code || e.message) || String(e);
+    errBox.textContent = '❌ 結單失敗，訂單沒有被清空（' + code + '）'
+      + (/permission/i.test(code) ? '。Firebase 規則不允許寫入 archives，需要到 Firebase 後台開放。' : '。請檢查網路後重試。');
+    btn.disabled = false; cancel.disabled = false;
+    btn.textContent = '重試結單';
+  }
+}
+
+document.getElementById('co-cancel').addEventListener('click', closeCloseOut);
+document.getElementById('co-confirm').addEventListener('click', confirmCloseOut);
+document.getElementById('closeout-overlay').addEventListener('mousedown', e => {
+  if (e.target.id === 'closeout-overlay' && !document.getElementById('co-confirm').disabled) closeCloseOut();
+});
 </script>
 </body>
 </html>
