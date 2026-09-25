@@ -49,7 +49,8 @@
       font-size: 1em; font-weight: bold; cursor: pointer;
     }
     .login-box button:hover { background: var(--orange-dark); }
-    #pw-error { color: var(--red); font-size: 0.85em; margin-top: 10px; min-height: 20px; }
+    #login-error { color: var(--red); font-size: 0.85em; margin-top: 10px; min-height: 20px; line-height: 1.5; }
+    .login-box button:disabled { opacity: 0.6; cursor: wait; }
 
     /* ── DASHBOARD ── */
     #dashboard { display: none; }
@@ -433,14 +434,16 @@
 </head>
 <body>
 
-<div id="login-screen">
-  <div class="login-box">
+<!-- 登入畫面／後台在 Firebase 回報登入狀態前都先隱藏，避免已登入時閃一下登入頁 -->
+<div id="login-screen" style="display:none">
+  <form class="login-box" id="login-form" onsubmit="doLogin(event)">
     <h2>🔒 後台管理</h2>
-    <p>請輸入管理員密碼</p>
-    <input type="password" id="pw-input" placeholder="密碼" onkeydown="if(event.key==='Enter') checkPW()" />
-    <button onclick="checkPW()">進入後台</button>
-    <div id="pw-error"></div>
-  </div>
+    <p>請使用管理員帳號登入</p>
+    <input type="email" id="login-email" placeholder="Email" autocomplete="username" required />
+    <input type="password" id="login-pw" placeholder="密碼" autocomplete="current-password" required />
+    <button type="submit" id="login-btn">登入</button>
+    <div id="login-error"></div>
+  </form>
 </div>
 
 <div id="dashboard">
@@ -594,12 +597,12 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 
 <script>
 // ═══════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════
-const ADMIN_PASSWORD = 'A4980a4980@';
 const PRICE = 60;
 const TARGET = 100;
 
@@ -620,6 +623,7 @@ const PRODUCTS = [
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
 let dbListener = null;
 let allOrders = {};
 
@@ -651,37 +655,85 @@ function showToast(msg, kind) {
 // ═══════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════
-function checkPW() {
-  const pw = document.getElementById('pw-input').value;
-  if (pw === ADMIN_PASSWORD) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    startListen();
-    listenDeadline(); // 登入後監聽截止時間
-  } else {
-    document.getElementById('pw-error').textContent = '密碼錯誤，請再試';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
+// 管理員用 Firebase 帳號（Email＋密碼）登入，密碼由 Firebase 驗證，不會出現在程式碼裡。
+// 畫面切換全由 onAuthStateChanged 驅動（檔案最後面註冊），所以重新整理後仍維持登入。
+let dashboardActive = false;
+
+function showDashboard() {
+  if (dashboardActive) return;
+  dashboardActive = true;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  startListen();
+  listenDeadline();
+}
+
+function showLogin() {
+  if (dbListener) { db.ref('orders').off('value', dbListener); dbListener = null; }
+  db.ref('settings/deadline').off('value');
+  dashboardActive = false;
+  allOrders = {};
+  deadlineSaved = ''; deadlineDraft = '';
+  closePicker(); closeCloseOut();
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pw').value = '';
+}
+
+function loginErrorText(err) {
+  switch (err && err.code) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+    case 'auth/invalid-email':
+      return 'Email 或密碼錯誤，請再試';
+    case 'auth/too-many-requests':
+      return '嘗試次數太多，請稍後再試';
+    case 'auth/network-request-failed':
+      return '網路連線失敗，請檢查網路後再試';
+    case 'auth/operation-not-allowed':
+      return 'Firebase 尚未啟用「電子郵件/密碼」登入，請到 Firebase 後台 Authentication → 登入方式 開啟';
+    default:
+      return '登入失敗（' + ((err && (err.code || err.message)) || '未知錯誤') + '）';
   }
 }
 
-function logout() {
-  if (dbListener) db.ref('orders').off('value', dbListener);
-  db.ref('settings/deadline').off('value'); // 取消監聽
-  deadlineSaved = ''; deadlineDraft = '';
-  document.getElementById('dashboard').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('pw-input').value = '';
+async function doLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  const errBox = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errBox.textContent = '';
+  btn.disabled = true; btn.textContent = '登入中…';
+  try {
+    await auth.signInWithEmailAndPassword(email, pw);   // 成功後由 onAuthStateChanged 切到後台
+  } catch (err) {
+    errBox.textContent = loginErrorText(err);
+    document.getElementById('login-pw').value = '';
+    document.getElementById('login-pw').focus();
+  } finally {
+    btn.disabled = false; btn.textContent = '登入';
+  }
 }
+
+function logout() { auth.signOut(); }
 
 // ═══════════════════════════════════════════
 // REALTIME LISTENER (Orders & Settings)
 // ═══════════════════════════════════════════
+function listenError(what) {
+  return err => {
+    console.error(what + '失敗', err);
+    showToast(`${what}失敗：${(err && (err.code || err.message)) || err}`, 'err');
+  };
+}
+
 function startListen() {
   dbListener = db.ref('orders').on('value', snap => {
     allOrders = snap.val() || {};
     renderAll();
-  });
+  }, listenError('讀取訂單'));
 }
 
 // 截止時間一律存成 "YYYY-MM-DDTHH:mm"（跟前台 new Date() 解析的格式相同）
@@ -694,7 +746,7 @@ function listenDeadline() {
     deadlineSaved = snap.val() || '';
     if (!wasDirty) deadlineDraft = deadlineSaved;
     renderDeadline();
-  });
+  }, listenError('讀取截止時間'));
 }
 
 function renderDeadline() {
@@ -1200,6 +1252,17 @@ document.getElementById('co-confirm').addEventListener('click', confirmCloseOut)
 document.getElementById('closeout-overlay').addEventListener('mousedown', e => {
   if (e.target.id === 'closeout-overlay' && !document.getElementById('co-confirm').disabled) closeCloseOut();
 });
+
+// ═══════════════════════════════════════════
+// 登入狀態（放最後，等上面的函式與變數都定義好）
+// ═══════════════════════════════════════════
+let authResolved = false;
+auth.onAuthStateChanged(user => {
+  authResolved = true;
+  if (user) showDashboard(); else showLogin();
+});
+// 萬一 Firebase 一直沒回應（斷網），5 秒後至少把登入畫面顯示出來
+setTimeout(() => { if (!authResolved) showLogin(); }, 5000);
 </script>
 </body>
 </html>

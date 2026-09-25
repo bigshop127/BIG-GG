@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "orders": {
+      ".read": "auth != null",
+      "$orderKey": {
+        ".read": true,
+        ".write": "auth != null || newData.exists()",
+        ".validate": "auth != null || (newData.hasChildren(['name', 'phone3', 'total', 'amount']) && newData.child('name').isString() && newData.child('name').val().length <= 50 && newData.child('phone3').isString() && newData.child('phone3').val().matches(/^[0-9]{3}$/) && ((newData.child('isPaid').val() == true) == (data.child('isPaid').val() == true)))"
+      }
+    },
+    "settings": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "archives": {
+      ".read": "auth != null",
+      "$archiveId": {
+        ".write": "auth != null && !data.exists()"
+      }
+    }
+  }
+}
